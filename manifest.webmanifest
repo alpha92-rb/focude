@@ -1,0 +1,18 @@
+{
+  "name": "GEII · Lab — Productivité & Répétition Espacée",
+  "short_name": "GEII Lab",
+  "description": "Application de productivité pour étudiant GEII : Pomodoro, répétition espacée (courbe d'Ebbinghaus), tâches, examens, molécule évolutive.",
+  "start_url": "./",
+  "id": "geii-lab",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#06080d",
+  "theme_color": "#0a0f1e",
+  "lang": "fr",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
