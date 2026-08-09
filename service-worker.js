@@ -1,9 +1,9 @@
 /* GEII Lab — minimal offline app-shell cache.
    Only activates when served over http(s); harmless no-op file otherwise. */
-const CACHE = "geii-lab-v7";
+const CACHE = "geii-lab-v8";
 const SHELL = [
-  "./", "./index.html", "./styles-v8.css", "./store-v5.jsx", "./icons.jsx", "./shared-fixed.jsx",
-  "./logo.jsx", "./molecule-atom-v2.jsx", "./dashboard-v6.jsx", "./tasks.jsx", "./pomodoro-final.jsx",
+  "./", "./index.html", "./styles-v8.css", "./store-v6.jsx", "./icons.jsx", "./shared-fixed.jsx",
+  "./logo.jsx", "./molecule-atom-v3.jsx", "./dashboard-v6.jsx", "./tasks.jsx", "./pomodoro-final.jsx",
   "./revisions.jsx", "./exams.jsx", "./entreprise.jsx", "./media-embed.jsx", "./stats.jsx", "./settings-v2.jsx",
   "./onboarding.jsx", "./auth.jsx", "./cloud-sync.jsx", "./supabase-config.js",
   "./app-v5.jsx", "./manifest.webmanifest"
