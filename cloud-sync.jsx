@@ -108,8 +108,15 @@ const cloudAuth = {
   },
   async signOut() {
     if (!cloud.client) return;
-    await pushNow();                       // ne rien perdre avant de partir
-    await cloud.client.auth.signOut();
+    await pushNow();                       // ne rien perdre avant de partir — déjà résiliente à ses propres erreurs
+    try {
+      // Si le compte a été supprimé côté serveur entre-temps (session locale
+      // périmée pointant vers un utilisateur qui n'existe plus), cet appel
+      // peut échouer. Le nettoyage local ci-dessous doit avoir lieu quoi
+      // qu'il arrive : sinon l'utilisateur reste bloqué, connecté à un compte
+      // fantôme, sans aucun moyen de s'en sortir depuis l'interface.
+      await cloud.client.auth.signOut();
+    } catch (e) {}
     try { localStorage.removeItem("geii_lab_v1"); } catch (e) {}
     actions.resetAll();                    // l'appareil ne garde pas les données
     setCloud({ user: null, status: "signedout" });
