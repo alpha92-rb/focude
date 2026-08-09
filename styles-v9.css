@@ -1132,6 +1132,29 @@ hr.div { border: none; border-top: 1px solid var(--line); margin: 14px 0; }
 }
 @keyframes bootScan { 0%,100% { opacity: 0.25; transform: scaleX(0.4); } 50% { opacity: 1; transform: scaleX(1); } }
 
+/* ===== Verrou Face ID / Touch ID / code ===== */
+.applock-card {
+  /* La barre de scan de .boot-card évoque un chargement automatique ; ici on
+     attend une action (bouton), donc pas d'animation en boucle infinie. */
+  background: var(--glass);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-xl);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: var(--shadow-card);
+  padding: 36px 32px;
+  max-width: 340px;
+  text-align: center;
+}
+.applock-card::after { content: none; }
+.applock-msg { font-size: 12.5px; color: var(--fg-1); line-height: 1.5; }
+.applock-error {
+  font-size: 11.5px; color: oklch(0.85 0.15 25);
+  background: oklch(0.68 0.22 25 / 0.12); border: 1px solid oklch(0.68 0.22 25 / 0.3);
+  border-radius: var(--r-sm); padding: 8px 12px;
+}
+.applock-btn { width: 100%; min-height: 44px; margin-top: 4px; }
+
 /* ===== Floating Pomodoro pill (shown while the timer runs on other pages) ===== */
 .timer-pill {
   position: fixed; left: 50%; transform: translateX(-50%); bottom: 18px;

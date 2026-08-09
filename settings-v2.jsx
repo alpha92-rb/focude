@@ -11,6 +11,32 @@ const Settings = () => {
   const [confirmOut, setConfirmOut] = React.useState(false);
   const fileRef = React.useRef(null);
 
+  const [lockSupported, setLockSupported] = React.useState(false);
+  const [lockEnabled, setLockEnabled] = React.useState(() => {
+    try { return JSON.parse(localStorage.getItem("geii_applock_v1") || "{}").enabled === true; }
+    catch { return false; }
+  });
+  const [lockBusy, setLockBusy] = React.useState(false);
+  React.useEffect(() => { appLockSupported().then(setLockSupported); }, []);
+  const onToggleLock = async () => {
+    if (lockEnabled) {
+      appLockDisable();
+      setLockEnabled(false);
+      pushToast({ kind: "default", text: "Verrouillage désactivé." });
+      return;
+    }
+    setLockBusy(true);
+    try {
+      await appLockEnable();
+      setLockEnabled(true);
+      pushToast({ kind: "xp", text: "Verrouillage activé — Face ID / Touch ID / code demandé à l'ouverture." });
+    } catch {
+      pushToast({ kind: "default", text: "Activation annulée ou refusée." });
+    } finally {
+      setLockBusy(false);
+    }
+  };
+
   const gb = growthBreakdown(s);
   const created = new Date(s.profile.createdAt);
   const days = Math.max(1, Math.floor((now() - s.profile.createdAt) / dayMs));
@@ -107,6 +133,24 @@ const Settings = () => {
               Te prévient même si l'application est en arrière-plan.
             </div>
           </Card>
+
+          {lockSupported && (
+            <Card title="Sécurité" meta="VERROUILLAGE DE L'APPAREIL">
+              <div className="sound-toggle" style={{ fontSize: 12 }}>
+                <span>Face ID / Touch ID / code</span>
+                <button type="button" role="switch" aria-checked={lockEnabled}
+                  aria-label="Verrouillage biométrique"
+                  disabled={lockBusy}
+                  className={"switch " + (lockEnabled ? "on" : "")}
+                  onClick={onToggleLock}/>
+              </div>
+              <div className="muted" style={{ fontSize: 11, marginTop: 10, lineHeight: 1.5 }}>
+                Redemande Face ID, Touch ID ou le code de l'appareil à chaque ouverture
+                de l'application. Vérifié directement par ton téléphone — aucune donnée
+                biométrique ne transite ni n'est stockée par l'application ou Supabase.
+              </div>
+            </Card>
+          )}
         </div>
       </div>
 

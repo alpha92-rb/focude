@@ -67,6 +67,7 @@ révisions majeures.
 | `logo.jsx` | Logo SVG animé | `window.Logo` |
 | `icons.jsx` | Bibliothèque d'icônes SVG inline | `window.Icon` |
 | `shared-fixed.jsx` | Composants UI partagés (Card, Modal, Sparkline, ProgressRing, …) | `Card, Sparkline, ProgressRing, Particles, Modal, ConfirmModal, SubjectTag` |
+| `app-lock.jsx` | Verrou d'appareil Face ID/Touch ID/code (WebAuthn, sans serveur) | `AppLockGate, appLockSupported, appLockEnable, appLockDisable` |
 | `molecule-atom-v3.jsx` | Rendu 3D (Three.js) de la molécule/atome compagnon | `window.Molecule3D` |
 | `tasks.jsx` | Page tâches | `TaskRow, TasksPage, AddTaskModal` |
 | `entreprise.jsx` | Page suivi entreprise/alternance | `window.Entreprise` |
@@ -120,6 +121,21 @@ rendu bureau ne révèle jamais :
 - Cibles tactiles à 44px minimum (boutons, onglets, interrupteurs, cases).
 - Le rendu WebGL de la molécule plafonne le `pixelRatio` à 1.5 et coupe
   l'antialias sur téléphone ; les particules de fond passent de 18 à 8.
+
+### Verrou d'appareil (`app-lock.jsx`)
+
+Couche indépendante de Supabase : elle protège l'accès à l'appareil, pas le
+compte, et n'a besoin d'aucun serveur. Basée sur WebAuthn avec un
+authentificateur de plateforme (`authenticatorAttachment: "platform"`) —
+Face ID, Touch ID, code de l'appareil. La clé privée reste dans l'enclave
+sécurisée du téléphone ; seul l'id de l'identifiant (`credentialId`) est
+gardé côté app, dans `localStorage` (`geii_applock_v1`). Réussir
+`navigator.credentials.get()` EST la preuve de vérification — inutile de
+valider une signature côté client pour un simple verrou local. `AppLockGate`
+enveloppe `<App/>` dans `app-v5.jsx` et s'affiche avant même l'écran de
+connexion Supabase. Le réglage n'apparaît dans Réglages que si
+`appLockSupported()` répond vrai (aucun authentificateur de plateforme →
+la carte "Sécurité" ne s'affiche pas).
 
 ### Supabase — synchro en veille par défaut
 

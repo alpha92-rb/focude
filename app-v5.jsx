@@ -235,7 +235,10 @@ const App = () => {
   );
 };
 
-ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+// Le verrou d'appareil protège l'accès local (Face ID/Touch ID/code) : il
+// s'affiche avant même l'écran de connexion Supabase, puisqu'il garde
+// l'appareil, pas le compte.
+ReactDOM.createRoot(document.getElementById("root")).render(<AppLockGate><App/></AppLockGate>);
 
 // Démarre la couche de synchronisation (inerte si non configurée)
 if (typeof startCloud === "function") startCloud();
