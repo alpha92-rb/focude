@@ -14,6 +14,12 @@
 
 const cloudConfigured = !!(window.SUPABASE_URL && window.SUPABASE_ANON_KEY);
 
+// Supabase ramène l'utilisateur sur le Site URL avec `#...&type=signup` dans
+// le lien de confirmation d'e-mail. Capturé ici, en lecture seule — surtout
+// ne PAS toucher au hash avant que le SDK (créé plus tard, dans initCloud)
+// n'ait eu la main dessus : c'est de ce même hash qu'il extrait la session.
+const emailJustConfirmed = new URLSearchParams(location.hash.replace(/^#/, "")).get("type") === "signup";
+
 const cloud = {
   enabled: cloudConfigured,
   client: null,
@@ -51,6 +57,14 @@ async function initCloud() {
     });
     cloud.enabled = true;
     const { data } = await cloud.client.auth.getSession();
+    // Le SDK a maintenant lu ce qu'il avait besoin de lire dans le hash —
+    // on peut le nettoyer de l'URL et signaler la confirmation une fois.
+    if (emailJustConfirmed) {
+      history.replaceState(null, "", location.pathname + location.search);
+      if (data && data.session) {
+        pushToast({ kind: "levelup", text: "Focude a bien confirmé ton e-mail — bienvenue !", duration: 5000 });
+      }
+    }
     if (data && data.session) {
       setCloud({ user: data.session.user, status: "syncing" });
       await syncOnLogin();
