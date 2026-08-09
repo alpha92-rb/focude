@@ -117,7 +117,9 @@ const App = () => {
   return (
     <div className="app">
       <div className="app-bg"/>
-      <Particles count={18}/>
+      {/* Décor pur : sur téléphone chaque particule est une couche animée de plus
+          à composer à 60 fps, pour un effet que le petit écran rend à peine. */}
+      <Particles count={matchMedia("(max-width: 840px)").matches ? 8 : 18}/>
 
       <div className="topbar">
         <div className="brand">

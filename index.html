@@ -2,7 +2,8 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <!-- viewport-fit=cover : indispensable pour que env(safe-area-inset-*) soit non nul sur iPhone -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
   <title>GEII · Lab — Système de progression intellectuelle</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cpath d='M24 2.5 L43.6 13.75 L43.6 36.25 L24 47.5 L4.4 36.25 L4.4 13.75 Z' fill='%230a0f1e' stroke='%234f7bff' stroke-width='2'/%3E%3Cg stroke='%237ce0ff' stroke-width='1.6' fill='none'%3E%3Cellipse cx='24' cy='24' rx='15' ry='6' transform='rotate(28 24 24)'/%3E%3Cellipse cx='24' cy='24' rx='15' ry='6' transform='rotate(-28 24 24)'/%3E%3C/g%3E%3Ccircle cx='24' cy='24' r='4.6' fill='%234f9bff'/%3E%3Ccircle cx='37' cy='17.5' r='2' fill='%237ce0ff'/%3E%3C/svg%3E"/>
 
@@ -22,7 +23,7 @@
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 
   <!-- Styles -->
-  <link rel="stylesheet" href="styles-v8.css">
+  <link rel="stylesheet" href="styles-v9.css">
 
   <!-- Three.js (ball-and-stick molecule companion) -->
   <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>

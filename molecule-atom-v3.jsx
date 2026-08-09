@@ -60,8 +60,18 @@ const Molecule3D = ({ stage = 0, onTouch }) => {
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(42, W / H, 0.1, 400);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance", preserveDrawingBuffer: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    // Sur téléphone, un écran 3x en pixelRatio 2 fait rendre ~4x plus de pixels
+    // que nécessaire : la scène rame et la batterie chauffe pour un gain
+    // invisible à cette taille. On plafonne à 1.5 et on coupe l'antialias
+    // matériel, que la densité de l'écran masque déjà.
+    const isPhone = window.matchMedia("(max-width: 840px)").matches;
+    const renderer = new THREE.WebGLRenderer({
+      antialias: !isPhone,
+      alpha: true,
+      powerPreference: "high-performance",
+      preserveDrawingBuffer: true,
+    });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, isPhone ? 1.5 : 2));
     renderer.setSize(W, H);
     renderer.setClearColor(0x000000, 0);
     if (THREE.SRGBColorSpace) renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -265,7 +275,14 @@ const Molecule3D = ({ stage = 0, onTouch }) => {
       mouse.tx = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       mouse.ty = ((e.clientY - rect.top) / rect.height) * 2 - 1;
     };
-    el.addEventListener("mousemove", onMove);
+    // pointermove couvre souris, doigt et stylet d'un seul geste : au doigt la
+    // molécule suit le glissement au lieu de rester inerte.
+    el.addEventListener("pointermove", onMove);
+    // Le doigt quitte l'écran sans "sortir" comme une souris : on recentre,
+    // sinon la molécule reste figée dans sa dernière inclinaison.
+    const onLeave = () => { mouse.tx = 0; mouse.ty = 0; };
+    el.addEventListener("pointerleave", onLeave);
+    el.addEventListener("pointercancel", onLeave);
     let burst = 0;
     const onClick = () => { onTouch && onTouch(); burst = 1; };
     el.addEventListener("click", onClick);
@@ -378,7 +395,9 @@ const Molecule3D = ({ stage = 0, onTouch }) => {
     return () => {
       cancelAnimationFrame(raf);
       ro.disconnect();
-      el.removeEventListener("mousemove", onMove);
+      el.removeEventListener("pointermove", onMove);
+      el.removeEventListener("pointerleave", onLeave);
+      el.removeEventListener("pointercancel", onLeave);
       el.removeEventListener("click", onClick);
       renderer.dispose();
       if (renderer.domElement.parentNode === el) el.removeChild(renderer.domElement);

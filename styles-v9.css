@@ -56,6 +56,12 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   overflow: hidden;
+  /* Tactile : pas de flash gris à l'appui, pas d'inflation de texte en paysage,
+     pas de rebond élastique de la page entière derrière l'app. */
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  overscroll-behavior: none;
 }
 
 .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; font-feature-settings: "tnum","zero"; }
@@ -99,7 +105,10 @@ input, textarea, select { font-family: inherit; color: inherit; }
   display: grid;
   grid-template-columns: 224px 1fr;
   grid-template-rows: 56px 1fr;
+  /* 100dvh suit la barre d'adresse mobile : plus de bas de page coupé ni de
+     saut de mise en page quand Safari la rétracte. 100vh reste le repli. */
   height: 100vh;
+  height: 100dvh;
   width: 100vw;
 }
 
@@ -286,6 +295,9 @@ input, textarea, select { font-family: inherit; color: inherit; }
   overflow-x: hidden;
   padding: 22px 28px 60px;
   scroll-behavior: smooth;
+  /* Inertie iOS + le scroll ne se propage pas au document quand on atteint le bout. */
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
 }
 .main::-webkit-scrollbar { width: 8px; }
 .main::-webkit-scrollbar-track { background: transparent; }
@@ -1157,11 +1169,23 @@ kbd.kbd {
    Mobile / phone mode
    ========================================================== */
 @media (max-width: 840px) {
+  /* Encoche / trait d'accueil iPhone (non nuls seulement avec viewport-fit=cover). */
+  :root {
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-left: env(safe-area-inset-left, 0px);
+    --safe-right: env(safe-area-inset-right, 0px);
+  }
   .app {
     grid-template-columns: 1fr;
-    grid-template-rows: 56px 1fr 62px;
+    /* La barre du haut et la nav du bas absorbent les zones système : le contenu
+       utile n'est jamais sous l'encoche ni sous le trait d'accueil. */
+    grid-template-rows: calc(56px + var(--safe-top)) 1fr calc(62px + var(--safe-bottom));
   }
-  .topbar { padding: 0 10px; gap: 8px; }
+  .topbar {
+    padding: var(--safe-top) calc(10px + var(--safe-right)) 0 calc(10px + var(--safe-left));
+    gap: 8px;
+  }
   .brand { width: auto; padding-right: 10px; margin-left: -10px; padding-left: 10px; }
   .brand-text .t2 { display: none; }
   .stat-chip .label { display: none; }
@@ -1173,13 +1197,20 @@ kbd.kbd {
     grid-row: 3; grid-column: 1;
     flex-direction: row;
     align-items: center;
-    justify-content: space-around;
-    padding: 6px 4px;
+    justify-content: flex-start;
+    padding: 6px calc(4px + var(--safe-right)) calc(6px + var(--safe-bottom)) calc(4px + var(--safe-left));
     border-right: none;
     border-top: 1px solid var(--line);
     overflow-x: auto;
     overflow-y: hidden;
+    /* Défilement horizontal au doigt : inertie, calage sur l'onglet, pas de
+       propagation au contenu, et la barre de défilement reste invisible. */
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
   }
+  .sidebar::-webkit-scrollbar { display: none; }
   .sidebar .sec-label, .sidebar-footer { display: none; }
   .nav-btn {
     flex-direction: column;
@@ -1187,14 +1218,34 @@ kbd.kbd {
     padding: 6px 10px;
     font-size: 9px;
     white-space: nowrap;
-    min-width: 58px;
+    min-width: 62px;
+    min-height: 48px;          /* cible tactile confortable */
+    justify-content: center;
+    flex-shrink: 0;
+    scroll-snap-align: center;
     text-align: center;
   }
   .nav-btn span:not(.ico):not(.badge) { font-size: 9px; }
   .nav-btn .badge { position: absolute; top: 2px; right: 6px; }
   .nav-btn { position: relative; }
 
-  .main { padding: 14px 12px 90px; }
+  .main {
+    padding: 14px calc(12px + var(--safe-right)) 90px calc(12px + var(--safe-left));
+  }
+
+  /* iOS zoome de force sur tout champ dont le texte fait moins de 16px : la page
+     part en avant dès qu'on touche un input et il faut pincer pour revenir.
+     16px = pas de zoom, donc pas de rupture de fluidité à la saisie. */
+  .input, .textarea, .select { font-size: 16px; padding: 11px 12px; }
+
+  /* Cibles tactiles : 44px minimum sur tout ce qui se tape. */
+  .btn { min-height: 44px; padding-left: 14px; padding-right: 14px; }
+  .checkbox { width: 24px; height: 24px; }
+  .tabs button { min-height: 40px; padding-left: 14px; padding-right: 14px; }
+  .switch { width: 44px; height: 26px; }
+  .switch::after { width: 20px; height: 20px; top: 2px; left: 2px; }
+  .switch.on::after { left: 20px; }
+
   .page-head { flex-direction: column; align-items: flex-start; gap: 10px; }
   .page-head .actions { width: 100%; flex-wrap: wrap; }
   .page-head h1 { font-size: 18px; }
@@ -1216,11 +1267,33 @@ kbd.kbd {
   .task { grid-template-columns: 20px 1fr auto; }
   .task .meta { gap: 6px; }
 
-  .docked-player, .player-pill { right: 10px; bottom: 74px; width: calc(100vw - 20px); max-width: 360px; }
-  .timer-pill { bottom: 74px; }
+  /* Tout ce qui flotte au-dessus de la nav se cale au-dessus du trait d'accueil. */
+  .docked-player, .player-pill {
+    right: calc(10px + var(--safe-right));
+    bottom: calc(74px + var(--safe-bottom));
+    width: calc(100vw - 20px - var(--safe-left) - var(--safe-right));
+    max-width: 360px;
+  }
+  .timer-pill { bottom: calc(74px + var(--safe-bottom)); }
+  .toast-stack {
+    right: calc(10px + var(--safe-right));
+    bottom: calc(84px + var(--safe-bottom));
+  }
 
-  .modal { width: 94vw; }
-  .toast-stack { right: 10px; bottom: 84px; }
+  /* Modale : jamais plus haute que l'écran utile, et c'est le corps qui défile
+     pour que le titre et les boutons restent atteignables clavier ouvert. */
+  .modal {
+    width: 94vw;
+    max-height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 32px);
+    display: flex;
+    flex-direction: column;
+  }
+  .modal-body {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+  .modal-head, .modal-actions { flex-shrink: 0; }
 }
 
 @media (max-width: 480px) {
@@ -1228,6 +1301,51 @@ kbd.kbd {
   .kpi .val { font-size: 22px; }
   .exam-card { grid-template-columns: 1fr; }
   .exam-countdown { width: 100%; height: 60px; flex-direction: row; gap: 8px; }
+}
+
+/* ==========================================================
+   Appareils tactiles — sans souris, :hover se déclenche au tap
+   et RESTE appliqué jusqu'au tap suivant : l'élément touché
+   garde son survol, ce qui donne une interface « collante ».
+   On neutralise le survol et on le remplace par un retour :active
+   immédiat, seul état qui ait un sens au doigt.
+   ========================================================== */
+@media (hover: none) {
+  .nav-btn:hover { background: transparent; color: var(--fg-1); }
+  .chapter:hover { transform: none; border-color: var(--line); }
+  .task:hover, .pro-item:hover { background: transparent; }
+  .btn:hover { background: rgba(255,255,255,0.02); border-color: var(--line); }
+  .checkbox:hover { border-color: var(--line); }
+  .tabs button:hover { color: var(--fg-2); }
+  .media-tile:hover, .media-poster:hover,
+  .year-card:hover, .mode-card:hover,
+  .player-pill:hover, .timer-pill:hover {
+    border-color: var(--line);
+    background: none;
+  }
+  .media-poster:hover .media-poster-play { transform: none; }
+
+  /* Retour tactile : réaction instantanée sous le doigt. */
+  .nav-btn:active, .btn:active, .tabs button:active,
+  .chapter:active, .task:active, .pro-item:active,
+  .media-tile:active, .year-card:active, .mode-card:active {
+    transform: scale(0.97);
+    transition: transform 0.06s ease;
+  }
+  .checkbox:active { transform: scale(0.9); }
+}
+
+/* Respecte le réglage système « réduire les animations » (iOS : Accessibilité).
+   Les particules de fond et les rotations permanentes sont les premières à
+   couper — elles coûtent des images par seconde sans porter d'information. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .particle-bg { display: none; }
 }
 
 /* ==========================================================

@@ -35,7 +35,7 @@ en production :
 
 Il n'y a pas de git tags ni de changelog séparé pour les fichiers runtime :
 **le numéro de version fait partie du nom de fichier** (`store-v6.jsx`,
-`dashboard-v6.jsx`, `molecule-atom-v3.jsx`, `styles-v8.css`, …). Quand tu
+`dashboard-v6.jsx`, `molecule-atom-v3.jsx`, `styles-v9.css`, …). Quand tu
 fais une modification structurelle importante à un de ces fichiers (pas un
 simple correctif), le renommer en incrémentant sa version et mettre à jour
 **tous** les points qui le référencent :
@@ -60,7 +60,7 @@ révisions majeures.
 | `service-worker.js` | Cache app-shell offline (`CACHE`, `SHELL`) | — |
 | `manifest.webmanifest` | Métadonnées PWA / install iPhone-Android | — |
 | `icons/` | Icônes PWA (180/192/512/512-maskable) | — |
-| `styles-v8.css` | Feuille de style globale | — |
+| `styles-v9.css` | Feuille de style globale (inclut le bloc mobile / tactile / safe-area) | — |
 | `store-v6.jsx` | État global (Zustand-like maison), actions, FSRS-lite, atome à paliers, sons, toasts | `useStore, actions, sfx, pushToast, useToasts, hasProfile, todaySessions, weekSessions, monthSessions, totalMinutes, dueChapters, urgentExams, dayKey, todayKey, dayMs, now, …` |
 | `cloud-sync.jsx` | Client de synchro Supabase (push/pull, veille) | `cloud, useCloud, cloudAuth, startCloud, pushNow, syncOnLogin` |
 | `supabase-config.js` | `SUPABASE_URL` / `SUPABASE_ANON_KEY` (vide par défaut = sync désactivée) | `window.SUPABASE_URL`, `window.SUPABASE_ANON_KEY` |
@@ -102,6 +102,24 @@ sur plusieurs années d'utilisation. La progression est stockée en continu
 (0..15, partie fractionnaire = avancement réel à l'intérieur du palier
 courant) puis rendue visuellement par `molecule-atom-v3.jsx` (Three.js,
 orbitales + nucleus + électrons qui évoluent avec le palier).
+
+### Contraintes mobile / PWA iPhone
+
+L'app est installée sur l'écran d'accueil iPhone, ce qui impose des règles que le
+rendu bureau ne révèle jamais :
+
+- `index.html` porte `viewport-fit=cover` — **sans lui `env(safe-area-inset-*)`
+  vaut 0** et la barre de navigation du bas passe sous le trait d'accueil.
+- Les hauteurs plein écran utilisent `100dvh` (repli `100vh`) : `100vh` ignore la
+  barre d'adresse Safari et fait sauter la mise en page au scroll.
+- Tout champ de saisie fait **16px minimum en mobile** : en dessous, iOS zoome
+  d'autorité à la mise au point et l'utilisateur doit pincer pour revenir.
+- Les effets `:hover` sont neutralisés sous `@media (hover: none)` — au doigt un
+  survol se déclenche au tap et **reste collé** ensuite ; le retour visuel passe
+  par `:active`.
+- Cibles tactiles à 44px minimum (boutons, onglets, interrupteurs, cases).
+- Le rendu WebGL de la molécule plafonne le `pixelRatio` à 1.5 et coupe
+  l'antialias sur téléphone ; les particules de fond passent de 18 à 8.
 
 ### Supabase — synchro en veille par défaut
 

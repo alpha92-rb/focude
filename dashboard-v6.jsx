@@ -57,7 +57,11 @@ const Dashboard = ({ onNav }) => {
           <div className="molecule-stage">
             <div className="corners"><i className="tl"/><i className="tr"/><i className="bl"/><i className="br"/></div>
             <Molecule3D stage={gStage} onTouch={() => { sfx.touch(); }}/>
-            <div className="molecule-hint mono">SURVOLEZ · DÉPLACEZ LA SOURIS</div>
+            {/* Le geste n'est pas le même selon l'appareil : parler de souris sur
+                un téléphone décrit une interaction qui n'existe pas. */}
+            <div className="molecule-hint mono">
+              {matchMedia("(hover: none)").matches ? "GLISSEZ · TOUCHEZ" : "SURVOLEZ · DÉPLACEZ LA SOURIS"}
+            </div>
 
             <div className="tier-panel">
               <div className="tier-head">
