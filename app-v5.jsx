@@ -27,7 +27,7 @@ const App = () => {
 
   // ---- Countdown in the browser tab title ----
   React.useEffect(() => {
-    const base = "GEII · Lab";
+    const base = "Focude";
     if (running && s && s.pomodoro) {
       const m = Math.floor(remaining / 60), sec = remaining % 60;
       const tag = s.pomodoro.mode === "focus" ? "Focus" : "Pause";
@@ -125,7 +125,7 @@ const App = () => {
         <div className="brand">
           <Logo size={30}/>
           <div className="brand-text">
-            <div className="t1">GEII · LAB</div>
+            <div className="t1">FOCUDE</div>
             <div className="t2">SYSTEM v1.0</div>
           </div>
         </div>
@@ -188,7 +188,7 @@ const App = () => {
             />
           </div>
           <div className="mono" style={{ fontSize: 9, color: "var(--fg-3)", letterSpacing: "0.18em", marginTop: 4 }}>
-            BUT GEII • SAUVEGARDE LOCALE
+            {(s.profile.field || "SAUVEGARDE LOCALE").toUpperCase()}
           </div>
         </div>
       </aside>

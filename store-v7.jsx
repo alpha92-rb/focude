@@ -5,6 +5,14 @@
 
 const STORAGE_KEY = "geii_lab_v1";
 
+// Palette cyclique pour les matières créées par l'utilisateur (onboarding et
+// Réglages) — une "matière" n'a rien d'académique par nature, ce sont juste
+// des étiquettes colorées que l'utilisateur définit lui-même.
+const SUBJECT_PALETTE = ["#5aa9ff", "#7ce0ff", "#b18cff", "#ffb86b", "#7cf0c2", "#ff8ec7", "#ff8c69", "#9be15d"];
+function nextSubjectColor(existingCount) {
+  return SUBJECT_PALETTE[existingCount % SUBJECT_PALETTE.length];
+}
+
 /* ---------- helpers ---------- */
 const now = () => Date.now();
 const dayMs = 24 * 60 * 60 * 1000;
@@ -101,7 +109,7 @@ const seedData = () => {
 
   return {
     profile: {
-      name: "Étudiant GEII",
+      name: "Étudiant",
       level: 12,
       xp: 2840,
       xpForNext: 3500,
@@ -139,6 +147,10 @@ const emptyData = () => {
   const base = seedData();
   return {
     ...base,
+    // "Démarrage propre" veut dire propre : les matières de la démo n'ont
+    // rien à faire là — l'utilisateur définit les siennes à l'onboarding
+    // (ou plus tard, dans Réglages).
+    subjects: [],
     chapters: [],
     tasks: [],
     contacts: [],
@@ -168,6 +180,13 @@ function migrate(s) {
   if (!Array.isArray(s.media)) s.media = [];
   if (!Array.isArray(s.contacts)) s.contacts = [];
   if (!Array.isArray(s.deliveries)) s.deliveries = [];
+  if (!Array.isArray(s.subjects)) s.subjects = [];
+  if (s.profile.field == null) s.profile.field = "";
+  // Anciens codes d'année (BUT1/2/3), de quand l'app était encore spécifique
+  // au BUT GEII — remappés pour que le sélecteur générique Année 1/2/3 les
+  // reconnaisse toujours comme sélectionnés.
+  const YEAR_REMAP = { BUT1: "Y1", BUT2: "Y2", BUT3: "Y3" };
+  if (YEAR_REMAP[s.profile.year]) s.profile.year = YEAR_REMAP[s.profile.year];
   return s;
 }
 
@@ -232,9 +251,17 @@ function useStore() {
 
 /* ---------- Actions ---------- */
 const actions = {
-  initProfile({ name, year, mode }) {
+  initProfile({ name, field, year, subjects, mode }) {
     const base = mode === "fresh" ? emptyData() : seedData();
-    base.profile = { ...base.profile, name: (name || "").trim() || "Étudiant GEII", year: year || "BUT2", onboarded: true, createdAt: now() };
+    if (mode === "fresh" && Array.isArray(subjects)) base.subjects = subjects;
+    base.profile = {
+      ...base.profile,
+      name: (name || "").trim() || "Étudiant",
+      field: (field || "").trim(),
+      year: year || "",
+      onboarded: true,
+      createdAt: now(),
+    };
     base.updatedAt = now();
     state = base;
     saveState(state);
@@ -243,6 +270,29 @@ const actions = {
 
   updateProfile(patch) {
     setState((s) => ({ ...s, profile: { ...s.profile, ...patch } }));
+  },
+
+  /* Matières — libres, pas forcément académiques : l'utilisateur les nomme
+     comme il veut (une matière d'étude, un sport, un projet perso…). */
+  addSubject(name) {
+    const trimmed = (name || "").trim();
+    if (!trimmed) return;
+    setState((s) => {
+      if (s.subjects.some((sub) => sub.name.toLowerCase() === trimmed.toLowerCase())) return s;
+      const subj = { id: "sub" + now(), name: trimmed, color: nextSubjectColor(s.subjects.length) };
+      return { ...s, subjects: [...s.subjects, subj] };
+    });
+  },
+  deleteSubject(id) {
+    // Les tâches/chapitres/examens qui référençaient cette matière gardent
+    // leur id orphelin ; SubjectTag l'ignore silencieusement (pas de purge
+    // en cascade nécessaire pour un simple tag descriptif).
+    setState((s) => ({ ...s, subjects: s.subjects.filter((sub) => sub.id !== id) }));
+  },
+  renameSubject(id, name) {
+    const trimmed = (name || "").trim();
+    if (!trimmed) return;
+    setState((s) => ({ ...s, subjects: s.subjects.map((sub) => sub.id === id ? { ...sub, name: trimmed } : sub) }));
   },
 
   addXp(amount, reason) {
@@ -659,7 +709,7 @@ const RANKS = [
   { min: 24, label: "Ingénieur" },
   { min: 34, label: "Ingénieur Confirmé" },
   { min: 46, label: "Expert Système" },
-  { min: 60, label: "Architecte GEII" },
+  { min: 60, label: "Architecte" },
 ];
 function rankFor(level) {
   let r = RANKS[0].label;
@@ -942,4 +992,5 @@ Object.assign(window, {
   growthStage, growthBreakdown, tierInfo, MOLECULE_TIERS, parseMediaUrl, reviewQuests, proQuests,
   deferredReviewCount, dueReviewChapters, computeStreak, last14Days, rankFor,
   subscribeStore, getSnapshot, hydrateStore,
+  SUBJECT_PALETTE,
 });

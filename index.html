@@ -4,7 +4,7 @@
   <meta charset="utf-8"/>
   <!-- viewport-fit=cover : indispensable pour que env(safe-area-inset-*) soit non nul sur iPhone -->
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-  <title>GEII · Lab — Système de progression intellectuelle</title>
+  <title>Focude — Système de progression intellectuelle</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cpath d='M24 2.5 L43.6 13.75 L43.6 36.25 L24 47.5 L4.4 36.25 L4.4 13.75 Z' fill='%230a0f1e' stroke='%234f7bff' stroke-width='2'/%3E%3Cg stroke='%237ce0ff' stroke-width='1.6' fill='none'%3E%3Cellipse cx='24' cy='24' rx='15' ry='6' transform='rotate(28 24 24)'/%3E%3Cellipse cx='24' cy='24' rx='15' ry='6' transform='rotate(-28 24 24)'/%3E%3C/g%3E%3Ccircle cx='24' cy='24' r='4.6' fill='%234f9bff'/%3E%3Ccircle cx='37' cy='17.5' r='2' fill='%237ce0ff'/%3E%3C/svg%3E"/>
 
   <!-- PWA / "Add to Home Screen" (iPhone + Android + desktop) -->
@@ -13,7 +13,7 @@
   <meta name="mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-  <meta name="apple-mobile-web-app-title" content="GEII Lab"/>
+  <meta name="apple-mobile-web-app-title" content="Focude"/>
   <link rel="apple-touch-icon" href="icons/icon-180.png"/>
   <link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png"/>
 
@@ -63,20 +63,20 @@
         <circle cx="-13" cy="6.5" r="1.6" fill="#a05cff"/>
         <circle r="4.4" fill="url(#nu)"/>
       </g>
-      <text x="100" y="184" text-anchor="middle" font-family="monospace" font-size="11" fill="#7ce0ff" letter-spacing="3">GEII · LAB</text>
+      <text x="100" y="184" text-anchor="middle" font-family="monospace" font-size="11" fill="#7ce0ff" letter-spacing="3">FOCUDE</text>
     </svg>
   </template>
 
   <div id="root"></div>
 
   <!-- App modules — order matters: store + helpers first, then pages, then app entry -->
-  <script type="text/babel" src="store-v6.jsx"></script>
+  <script type="text/babel" src="store-v7.jsx"></script>
   <script type="text/babel" src="cloud-sync.jsx"></script>
   <script type="text/babel" src="logo.jsx"></script>
   <script type="text/babel" src="icons.jsx"></script>
   <script type="text/babel" src="shared-fixed.jsx"></script>
   <!-- Verrou Face ID / Touch ID / code : dépend de Logo (déjà chargé) et de
-       pushToast (dans store-v6.jsx, chargé en tout premier). -->
+       pushToast (dans store-v7.jsx, chargé en tout premier). -->
   <script type="text/babel" src="app-lock.jsx"></script>
   <script type="text/babel" src="molecule-atom-v3.jsx"></script>
   <script type="text/babel" src="tasks.jsx"></script>
@@ -87,7 +87,7 @@
   <script type="text/babel" src="exams.jsx"></script>
   <script type="text/babel" src="media-embed.jsx"></script>
   <script type="text/babel" src="stats.jsx"></script>
-  <script type="text/babel" src="settings-v2.jsx"></script>
+  <script type="text/babel" src="settings-v3.jsx"></script>
   <script type="text/babel" src="onboarding.jsx"></script>
   <script type="text/babel" src="auth.jsx"></script>
   <script type="text/babel" src="app-v5.jsx"></script>

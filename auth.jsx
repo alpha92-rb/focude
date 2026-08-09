@@ -45,7 +45,7 @@ const AuthScreen = () => {
             <div className="corners"><i className="tl"/><i className="tr"/><i className="bl"/><i className="br"/></div>
           </div>
           <div className="onb-readout">
-            <div className="line"><b>SYSTEM</b> GEII · LAB</div>
+            <div className="line"><b>SYSTEM</b> FOCUDE</div>
             <div className="line"><b>COMPTE</b> <span style={{ color: "var(--cyan)" }}>AUTHENTIFICATION REQUISE</span></div>
             <div className="line"><b>DONNÉES</b> CHIFFRÉES PAR UTILISATEUR</div>
             <div className="line"><b>SYNCHRO</b> TÉLÉPHONE ↔ ORDINATEUR</div>
@@ -56,7 +56,7 @@ const AuthScreen = () => {
           <div className="onb-brand">
             <Logo size={40}/>
             <div>
-              <div style={{ fontSize: 15, letterSpacing: "0.04em" }}>GEII · LAB</div>
+              <div style={{ fontSize: 15, letterSpacing: "0.04em" }}>FOCUDE</div>
               <div className="mono" style={{ fontSize: 9, letterSpacing: "0.28em", color: "var(--fg-3)", marginTop: 2 }}>
                 ACCÈS PRIVÉ
               </div>

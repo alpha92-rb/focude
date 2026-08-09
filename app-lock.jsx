@@ -53,8 +53,8 @@ async function appLockEnable() {
   const cred = await navigator.credentials.create({
     publicKey: {
       challenge: randomBytes(32),
-      rp: { name: "GEII · Lab", id: location.hostname },
-      user: { id: randomBytes(16), name: "verrouillage-appareil", displayName: "Verrouillage GEII Lab" },
+      rp: { name: "Focude", id: location.hostname },
+      user: { id: randomBytes(16), name: "verrouillage-appareil", displayName: "Verrouillage Focude" },
       pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
       authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required", residentKey: "preferred" },
       timeout: 60000,

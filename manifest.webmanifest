@@ -1,7 +1,7 @@
 {
-  "name": "GEII · Lab — Productivité & Répétition Espacée",
-  "short_name": "GEII Lab",
-  "description": "Application de productivité pour étudiant GEII : Pomodoro, répétition espacée (courbe d'Ebbinghaus), tâches, examens, molécule évolutive.",
+  "name": "Focude — Productivité & Répétition Espacée",
+  "short_name": "Focude",
+  "description": "Application de productivité multi-domaine : Pomodoro, répétition espacée (courbe d'Ebbinghaus), tâches, examens, molécule évolutive, matières personnalisables.",
   "start_url": "./",
   "id": "geii-lab",
   "scope": "./",

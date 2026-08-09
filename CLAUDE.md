@@ -1,8 +1,18 @@
-# GEII · Lab — notes pour Claude Code
+# Focude — notes pour Claude Code
 
-PWA React de productivité pour étudiant GEII (Pomodoro, répétition espacée,
-tâches, examens, molécule évolutive). Servie telle quelle par GitHub Pages,
-branche `main`.
+PWA React de productivité **multi-domaine** (Pomodoro, répétition espacée,
+tâches, examens, molécule évolutive). N'importe qui définit son propre
+domaine d'études (ou métier, ou passion) et ses propres matières à
+l'onboarding — l'app n'assume rien de fixe sur ce que l'utilisateur étudie.
+Servie telle quelle par GitHub Pages, branche `main`.
+
+Nom de code historique du dépôt GitHub (`geii`) et de certaines clés
+internes (`geii_lab_v1` en `localStorage`, `id: "geii-lab"` dans le
+manifest, `geii-lab-vN` pour le cache du service worker) : **ne pas
+renommer** — l'app s'appelait ainsi à l'origine (spécifique BUT GEII), et
+changer ces identifiants internes casserait soit l'URL du dépôt soit la
+reconnaissance de la PWA déjà installée sur les appareils. Le nom
+utilisateur affiché partout dans l'interface est **Focude**.
 
 ## Contrainte fondamentale : aucun build
 
@@ -34,7 +44,7 @@ en production :
 ## Versionnage par nom de fichier
 
 Il n'y a pas de git tags ni de changelog séparé pour les fichiers runtime :
-**le numéro de version fait partie du nom de fichier** (`store-v6.jsx`,
+**le numéro de version fait partie du nom de fichier** (`store-v7.jsx`,
 `dashboard-v6.jsx`, `molecule-atom-v3.jsx`, `styles-v9.css`, …). Quand tu
 fais une modification structurelle importante à un de ces fichiers (pas un
 simple correctif), le renommer en incrémentant sa version et mettre à jour
@@ -61,7 +71,7 @@ révisions majeures.
 | `manifest.webmanifest` | Métadonnées PWA / install iPhone-Android | — |
 | `icons/` | Icônes PWA (180/192/512/512-maskable) | — |
 | `styles-v9.css` | Feuille de style globale (inclut le bloc mobile / tactile / safe-area) | — |
-| `store-v6.jsx` | État global (Zustand-like maison), actions, FSRS-lite, atome à paliers, sons, toasts | `useStore, actions, sfx, pushToast, useToasts, hasProfile, todaySessions, weekSessions, monthSessions, totalMinutes, dueChapters, urgentExams, dayKey, todayKey, dayMs, now, …` |
+| `store-v7.jsx` | État global (Zustand-like maison), actions, FSRS-lite, atome à paliers, matières libres, sons, toasts | `useStore, actions, sfx, pushToast, useToasts, hasProfile, todaySessions, weekSessions, monthSessions, totalMinutes, dueChapters, urgentExams, dayKey, todayKey, dayMs, now, SUBJECT_PALETTE, …` |
 | `cloud-sync.jsx` | Client de synchro Supabase (push/pull, veille) | `cloud, useCloud, cloudAuth, startCloud, pushNow, syncOnLogin` |
 | `supabase-config.js` | `SUPABASE_URL` / `SUPABASE_ANON_KEY` (vide par défaut = sync désactivée) | `window.SUPABASE_URL`, `window.SUPABASE_ANON_KEY` |
 | `logo.jsx` | Logo SVG animé | `window.Logo` |
@@ -77,15 +87,15 @@ révisions majeures.
 | `exams.jsx` | Page examens | `window.Exams` |
 | `media-embed.jsx` | Lecteur média intégré (dock, pill) | `MediaPage, DockedPlayer, PlayerPill, MediaEmbed, activeMedia` |
 | `stats.jsx` | Page statistiques | `window.Stats` |
-| `settings-v2.jsx` | Page réglages | `window.Settings` |
-| `onboarding.jsx` | Écran d'accueil / première utilisation | `window.Onboarding` |
+| `settings-v3.jsx` | Page réglages (profil, domaine, matières, sécurité, sauvegarde) | `window.Settings` |
+| `onboarding.jsx` | Questionnaire de première utilisation (5 étapes : prénom, domaine, année, matières, mode) | `window.Onboarding` |
 | `auth.jsx` | Écran de connexion + puce de statut de synchro | `AuthScreen, SyncChip` |
 | `app-v5.jsx` | Point d'entrée, routing, montage React | — (dernier chargé) |
 | `SETUP-SYNC.md` | Guide utilisateur pour activer Supabase | — |
 
 ## Systèmes métier
 
-### Répétition espacée — FSRS-lite (`store-v6.jsx`)
+### Répétition espacée — FSRS-lite (`store-v7.jsx`)
 
 Algorithme inspiré d'Anki/FSRS, allégé, basé sur la courbe de l'oubli
 d'Ebbinghaus. Chaque chapitre a un état de révision programmé ; une révision
@@ -94,7 +104,7 @@ l'intervalle avant la prochaine échéance. `dueChapters` expose les chapitres
 en retard/à réviser aujourd'hui. La page `revisions.jsx` affiche la courbe
 (`EbbinghausCurve`) et la file de révision.
 
-### Atome à 16 paliers (`store-v6.jsx`, `molecule-atom-v3.jsx`)
+### Atome à 16 paliers (`store-v7.jsx`, `molecule-atom-v3.jsx`)
 
 Système de progression/gamification : au lieu de quelques stades grossiers,
 **16 paliers nommés** avec des seuils **géométriques** (chaque palier coûte
@@ -103,6 +113,30 @@ sur plusieurs années d'utilisation. La progression est stockée en continu
 (0..15, partie fractionnaire = avancement réel à l'intérieur du palier
 courant) puis rendue visuellement par `molecule-atom-v3.jsx` (Three.js,
 orbitales + nucleus + électrons qui évoluent avec le palier).
+
+### Domaine et matières — libres, définis par l'utilisateur
+
+L'app n'a plus aucune liste de matières figée dans le code pour l'usage réel
+(seul `seedData()` dans `store-v7.jsx` garde des matières d'ingénierie
+GEII-flavored, mais **seulement pour le mode démo** — le mode "démarrage
+propre" démarre avec `subjects: []`). Deux points d'entrée pour construire
+sa liste :
+
+1. **Onboarding** (`onboarding.jsx`, étape 4/5) — champ + bouton "Ajouter",
+   chips retirables, palette de couleurs cyclique (`SUBJECT_PALETTE`).
+2. **Réglages** (`settings-v3.jsx`, carte "Matières") — mêmes actions
+   (`actions.addSubject`, `actions.deleteSubject`, `actions.renameSubject`
+   dans `store-v7.jsx`), accessibles à tout moment après l'onboarding.
+
+Une "matière" n'est qu'une étiquette `{ id, name, color }` — rien ne
+l'oblige à être scolaire (le texte d'aide le dit explicitement : sport,
+projet perso, vie pro…). Supprimer une matière ne purge pas les
+tâches/chapitres/examens qui la référençaient : `SubjectTag` (dans
+`shared-fixed.jsx`) ignore silencieusement un `subject` orphelin.
+
+Le champ `profile.field` (domaine/filière, texte libre, facultatif) est
+purement informatif — aucune logique ne se branche dessus, contrairement à
+l'ancien état où "GEII" était supposé partout dans les textes d'interface.
 
 ### Contraintes mobile / PWA iPhone
 

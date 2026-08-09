@@ -1,5 +1,5 @@
 /* ==========================================================
-   logo.jsx — GEII · Lab brand mark.
+   logo.jsx — Focude brand mark.
    Hexagonal engineering badge + atomic orbit. Used in the
    topbar, onboarding, and as the favicon.
    ========================================================== */

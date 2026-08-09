@@ -7,8 +7,11 @@ const Settings = () => {
   const s = useStore();
   const c = useCloud();
   const [name, setName] = React.useState(s.profile.name);
+  const [field, setField] = React.useState(s.profile.field || "");
   const [confirmImport, setConfirmImport] = React.useState(null);
   const [confirmOut, setConfirmOut] = React.useState(false);
+  const [confirmDeleteSubject, setConfirmDeleteSubject] = React.useState(null);
+  const [subjectInput, setSubjectInput] = React.useState("");
   const fileRef = React.useRef(null);
 
   const [lockSupported, setLockSupported] = React.useState(false);
@@ -74,12 +77,25 @@ const Settings = () => {
             </button>
           </div>
 
-          <label className="field-label" style={{ marginTop: 16 }}>Année d'étude</label>
+          <label className="field-label" style={{ marginTop: 16 }}>Domaine</label>
+          <div className="row gap-2">
+            <input className="input" value={field} onChange={(e) => setField(e.target.value)}
+              placeholder="Ex. GEII, Droit, Autoformation…" style={{ flex: 1 }}/>
+            <button className="btn primary" disabled={field === (s.profile.field || "")}
+              onClick={() => { actions.updateProfile({ field: field.trim() }); pushToast({ kind: "default", text: "Domaine mis à jour." }); }}>
+              Enregistrer
+            </button>
+          </div>
+
+          <label className="field-label" style={{ marginTop: 16 }}>Année / niveau</label>
           <div className="year-grid">
-            {["BUT1", "BUT2", "BUT3", "OTHER"].map((y) => (
-              <button key={y} className={"year-card " + (s.profile.year === y ? "active" : "")}
-                onClick={() => actions.updateProfile({ year: y })}>
-                <div className="lbl">{y === "OTHER" ? "Autre" : y.replace("BUT", "BUT ")}</div>
+            {[
+              { id: "Y1", lbl: "Année 1" }, { id: "Y2", lbl: "Année 2" },
+              { id: "Y3", lbl: "Année 3" }, { id: "OTHER", lbl: "Autre" },
+            ].map((y) => (
+              <button key={y.id} className={"year-card " + (s.profile.year === y.id ? "active" : "")}
+                onClick={() => actions.updateProfile({ year: y.id })}>
+                <div className="lbl">{y.lbl}</div>
               </button>
             ))}
           </div>
@@ -132,6 +148,36 @@ const Settings = () => {
             <div className="muted" style={{ fontSize: 11, marginTop: 10, lineHeight: 1.5 }}>
               Te prévient même si l'application est en arrière-plan.
             </div>
+          </Card>
+
+          <Card title="Matières" meta="LIBRES · PAS FORCÉMENT SCOLAIRES">
+            <div className="muted" style={{ fontSize: 11.5, lineHeight: 1.5, marginBottom: 12 }}>
+              Un cours, un sport, un projet perso, ta vie pro… Ce que tu veux suivre séparément dans tes tâches, chapitres et examens.
+            </div>
+            <div className="row gap-2">
+              <input className="input" value={subjectInput} onChange={(e) => setSubjectInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && subjectInput.trim()) { actions.addSubject(subjectInput); setSubjectInput(""); } }}
+                placeholder="Ex. Sport, Perso, Automatique…" style={{ flex: 1 }}/>
+              <button className="btn primary" disabled={!subjectInput.trim()}
+                onClick={() => { actions.addSubject(subjectInput); setSubjectInput(""); }}>
+                Ajouter
+              </button>
+            </div>
+            {s.subjects.length > 0 ? (
+              <div className="row gap-2" style={{ flexWrap: "wrap", marginTop: 14 }}>
+                {s.subjects.map((sub) => (
+                  <span key={sub.id} className="tag" style={{ color: sub.color, borderColor: sub.color + "55", background: sub.color + "12" }}>
+                    <span style={{ width: 5, height: 5, borderRadius: "50%", background: sub.color }}/>
+                    {sub.name}
+                    <button type="button" onClick={() => setConfirmDeleteSubject(sub)}
+                      style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", padding: 0, marginLeft: 4, fontSize: 12, lineHeight: 1 }}
+                      title="Supprimer">✕</button>
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <div className="muted" style={{ fontSize: 11, marginTop: 12 }}>Aucune matière pour l'instant.</div>
+            )}
           </Card>
 
           {lockSupported && (
@@ -223,6 +269,15 @@ const Settings = () => {
           confirmLabel="Restaurer"
           onConfirm={() => actions.importBackup(confirmImport)}
           onClose={() => setConfirmImport(null)}
+        />
+      )}
+      {confirmDeleteSubject && (
+        <ConfirmModal
+          title="Supprimer cette matière"
+          message={`"${confirmDeleteSubject.name}" sera retirée de la liste. Les tâches, chapitres et examens déjà associés garderont juste une étiquette vide — rien d'autre n'est supprimé.`}
+          confirmLabel="Supprimer"
+          onConfirm={() => { actions.deleteSubject(confirmDeleteSubject.id); setConfirmDeleteSubject(null); }}
+          onClose={() => setConfirmDeleteSubject(null)}
         />
       )}
       {confirmOut && (
