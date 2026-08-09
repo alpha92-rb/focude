@@ -90,6 +90,18 @@
   <script type="text/babel" src="app-v5.jsx"></script>
   <script>
     if ("serviceWorker" in navigator && location.protocol !== "file:") {
+      // Un nouveau service worker prend le contrôle en arrière-plan, mais la page
+      // déjà ouverte continue de tourner avec l'ancien tant qu'elle n'est pas
+      // rechargée : sans ce guard, il fallait recharger deux fois pour voir une
+      // mise à jour (le premier rechargement servait encore l'ancien contenu).
+      // On déclenche donc UN seul rechargement automatique, exactement quand le
+      // nouveau service worker prend la main.
+      let reloadedForUpdate = false;
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (reloadedForUpdate) return;
+        reloadedForUpdate = true;
+        window.location.reload();
+      });
       window.addEventListener("load", () => navigator.serviceWorker.register("service-worker.js").catch(() => {}));
     }
   </script>
