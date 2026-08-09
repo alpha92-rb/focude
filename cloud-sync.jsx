@@ -134,7 +134,6 @@ async function syncOnLogin() {
     if (remote && remoteAt >= localAt) {
       hydrateStore(remote.data);
       setCloud({ status: "synced", lastSync: Date.now(), message: "" });
-      pushToast({ kind: "default", text: "Données récupérées depuis ton compte." });
     } else if (local && local.profile) {
       await pushNow();
       pushToast({ kind: "default", text: "Données de cet appareil envoyées sur ton compte." });
