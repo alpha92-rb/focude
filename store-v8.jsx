@@ -177,6 +177,7 @@ function migrate(s) {
   if (!s.settings) s.settings = base.settings;
   if (s.settings.notify == null) s.settings.notify = false;
   delete s._lastXp;              // transient event: never restore from disk
+  delete s._lastTierUp;          // transient event: never restore from disk
   if (!Array.isArray(s.media)) s.media = [];
   if (!Array.isArray(s.contacts)) s.contacts = [];
   if (!Array.isArray(s.deliveries)) s.deliveries = [];
@@ -207,8 +208,8 @@ function loadState() {
 
 function saveState(s) {
   try {
-    // _lastXp is a transient UI event, never persist it (it would replay on reload)
-    const { _lastXp, ...persist } = s;
+    // _lastXp / _lastTierUp are transient UI events, never persist them (they'd replay on reload)
+    const { _lastXp, _lastTierUp, ...persist } = s;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(persist));
   } catch (e) {}
 }
@@ -220,8 +221,18 @@ function hasProfile() { return !!state; }
 
 function setState(updater) {
   if (!state) state = seedData();
+  const prevTier = tierInfo(state).tier;
   const next = typeof updater === "function" ? updater(state) : { ...state, ...updater };
   next.updatedAt = now();          // horodatage utilisé par la synchro cloud
+  // Le "noyau" (molécule) ne monte de palier qu'en accumulant du vrai travail
+  // (pomodoros, tâches, révisions) — jamais en 20 minutes. On détecte le
+  // franchissement ici, au point central de mutation, plutôt que de dupliquer
+  // la logique dans chaque action qui peut faire grandir growthPoints().
+  const nextTier = tierInfo(next).tier;
+  if (nextTier > prevTier) {
+    const tier = MOLECULE_TIERS[nextTier];
+    next._lastTierUp = { tier: nextTier, name: tier.name, roman: ROMAN[nextTier], atoms: tier.atoms, at: now() };
+  }
   state = next;
   saveState(state);
   listeners.forEach((l) => l());
@@ -231,7 +242,7 @@ function setState(updater) {
 function subscribeStore(fn) { listeners.add(fn); return () => listeners.delete(fn); }
 function getSnapshot() {
   if (!state) return null;
-  const { _lastXp, ...doc } = state;
+  const { _lastXp, _lastTierUp, ...doc } = state;
   return doc;
 }
 // Remplace l'état local par un document distant SANS re-horodater

@@ -12,7 +12,8 @@ const App = () => {
   const [page, setPage] = React.useState("dashboard");
   const [confirmReset, setConfirmReset] = React.useState(false);
   const xpSeen = React.useRef(null);
-  const [systemEvent, setSystemEvent] = React.useState(null); // { level, rank } | { level, rank, closing: true } | null
+  const tierSeen = React.useRef(null);
+  const [systemEvent, setSystemEvent] = React.useState(null); // { roman, name, atoms } | { ..., closing: true } | null
 
   // L'onglet Entreprise disparaît si l'utilisateur a répondu "non" à "tu
   // travailles ?" — s'il était affiché quand la réponse a changé, on ne
@@ -46,22 +47,28 @@ const App = () => {
     }
   }, [running, remaining, s && s.pomodoro && s.pomodoro.mode]);
 
-  // ---- XP / level-up toasts (ignores the mount pass and stale events) ----
+  // ---- XP toast (ignores the mount pass and stale events) ----
   const lastXp = s && s._lastXp;
   React.useEffect(() => {
     if (!lastXp) return;
     if (xpSeen.current === lastXp.at) return;
     xpSeen.current = lastXp.at;
     if (now() - lastXp.at > 5000) return;
-    if (lastXp.leveled) {
-      sfx.levelUp();
-      setSystemEvent({ level: s.profile.level, rank: rankFor(s.profile.level) });
-    } else {
-      pushToast({ kind: "xp", text: `+${lastXp.amount} XP · ${lastXp.reason}` });
-    }
+    pushToast({ kind: "xp", text: `+${lastXp.amount} XP · ${lastXp.reason}` });
   }, [lastXp]);
 
-  // ---- "System" level-up window: auto-dismiss after a few seconds, unless already closing ----
+  // ---- "System" window: fires when the core (noyau/molécule) crosses a palier ----
+  const lastTierUp = s && s._lastTierUp;
+  React.useEffect(() => {
+    if (!lastTierUp) return;
+    if (tierSeen.current === lastTierUp.at) return;
+    tierSeen.current = lastTierUp.at;
+    if (now() - lastTierUp.at > 5000) return;
+    sfx.levelUp();
+    setSystemEvent({ roman: lastTierUp.roman, name: lastTierUp.name, atoms: lastTierUp.atoms });
+  }, [lastTierUp]);
+
+  // ---- "System" window: auto-dismiss after a few seconds, unless already closing ----
   React.useEffect(() => {
     if (!systemEvent || systemEvent.closing) return;
     const id = setTimeout(() => setSystemEvent((e) => e && { ...e, closing: true }), 4600);
@@ -120,8 +127,9 @@ const App = () => {
         <div className="system-title">{t("system.title")}</div>
         <div className="system-divider"/>
         <div className="system-body">
-          <div className="system-level">{t("system.level")} {systemEvent.level}</div>
-          <div className="system-sub">{t("system.newRank")} <b>{systemEvent.rank}</b></div>
+          <div className="system-level">{t("system.tier")} {systemEvent.roman}</div>
+          <div className="system-sub">{t("system.newRank")} <b>{systemEvent.name}</b></div>
+          <div className="system-atoms mono">{systemEvent.atoms} {t("dash.molecule.atoms")}</div>
         </div>
         <div className="system-hint">{t("system.hint")}</div>
       </div>
