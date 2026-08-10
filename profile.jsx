@@ -1,12 +1,74 @@
 /* ==========================================================
-   stats.jsx — Statistics dashboard.
-   Heatmap (GitHub-style), productivity curve, subject share, history.
+   profile.jsx — Page Profil : photo, assiduité, progression.
+   Photo de profil + heatmap (style GitHub), courbe de productivité,
+   répartition par matière, historique des sessions.
    ========================================================== */
 
-const Stats = () => {
+// Redimensionne et compresse une image côté client avant de la stocker :
+// une photo de téléphone fait plusieurs Mo, alors qu'un avatar affiché à
+// ~80px n'a besoin que de quelques dizaines de Ko — sinon chaque sync
+// Supabase traînerait un JSON obèse.
+function compressAvatar(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = () => {
+      img.onerror = reject;
+      img.onload = () => {
+        const SIZE = 256;
+        const canvas = document.createElement("canvas");
+        canvas.width = SIZE; canvas.height = SIZE;
+        const ctx = canvas.getContext("2d");
+        // Recadrage carré centré, quel que soit le ratio d'origine.
+        const side = Math.min(img.width, img.height);
+        const sx = (img.width - side) / 2, sy = (img.height - side) / 2;
+        ctx.drawImage(img, sx, sy, side, side, 0, 0, SIZE, SIZE);
+        resolve(canvas.toDataURL("image/jpeg", 0.82));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+const Avatar = ({ src, name, size = 64, onClick }) => {
+  const initial = (name || "?").trim().charAt(0).toUpperCase();
+  return (
+    <div onClick={onClick} style={{
+      width: size, height: size, borderRadius: "50%", flexShrink: 0,
+      background: src ? `center/cover no-repeat url(${src})` : "linear-gradient(135deg, oklch(0.72 0.18 240), oklch(0.55 0.18 270))",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      fontSize: size * 0.4, fontWeight: 600, color: "#fff",
+      border: "1px solid var(--line-strong)", boxShadow: "0 0 0 1px rgba(255,255,255,0.03) inset",
+      cursor: onClick ? "pointer" : "default",
+    }}>
+      {!src && initial}
+    </div>
+  );
+};
+
+const ProfilePage = () => {
   const s = useStore();
+  const [lang] = useLang();
   const subjects = s.subjects;
   const sessions = s.sessions;
+  const fileRef = React.useRef(null);
+  const locale = lang === "en" ? "en-US" : "fr-FR";
+
+  const onAvatarPick = () => fileRef.current && fileRef.current.click();
+  const onAvatarFile = async (e) => {
+    const f = e.target.files && e.target.files[0];
+    e.target.value = "";
+    if (!f) return;
+    try {
+      const dataUrl = await compressAvatar(f);
+      actions.updateProfile({ avatar: dataUrl });
+      pushToast({ kind: "default", text: t("profile.changePhoto") + " ✓" });
+    } catch {
+      pushToast({ kind: "default", text: "…" });
+    }
+  };
 
   // === Heatmap data: 365 days ===
   const heatmapData = React.useMemo(() => {
@@ -59,42 +121,60 @@ const Stats = () => {
     <div className="page">
       <div className="page-head">
         <div>
-          <h1>Statistiques</h1>
-          <div className="sub">PROGRESSION • HABITUDES • RÉTENTION</div>
+          <h1>{t("profile.title")}</h1>
+          <div className="sub">{t("profile.subtitle")}</div>
         </div>
         <div className="actions">
-          <div className="stat-chip"><span className="label">Compte</span><span className="val mono">{Math.floor((now() - s.profile.createdAt) / dayMs)} jours</span></div>
+          <div className="stat-chip"><span className="label">{t("profile.account")}</span><span className="val mono">{Math.floor((now() - s.profile.createdAt) / dayMs)} {lang === "en" ? "days" : "jours"}</span></div>
         </div>
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 16 }}>
-        <KpiMini title="Temps total" value={`${Math.floor(totalMinutes(sessions)/60)}h`} sub={`${sessions.length} sessions`} tone="cyan"/>
-        <KpiMini title="Moy. quot." value={`${Math.round(totalMin / 90)} min`} sub="90 derniers jours" tone="cyan"/>
-        <KpiMini title="Régularité" value={`${Math.round(reviewRespected * 100)}%`} sub="révisions respectées" tone="amber"/>
-        <KpiMini title="Niveau" value={`Lv ${s.profile.level}`} sub={s.profile.rank} tone="violet"/>
       </div>
 
       <div style={{ marginBottom: 16 }}>
-        <Card title="Activité — 12 derniers mois" meta={`${sessions.length} sessions • style heatmap`}>
-          <Heatmap data={heatmapData}/>
+        <Card>
+          <div className="row gap-2" style={{ alignItems: "center" }}>
+            <Avatar src={s.profile.avatar} name={s.profile.name} size={72} onClick={onAvatarPick}/>
+            <input ref={fileRef} type="file" accept="image/*" onChange={onAvatarFile} style={{ display: "none" }}/>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 17, fontWeight: 500 }}>{s.profile.name}</div>
+              <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>
+                {[s.profile.field, s.profile.rank].filter(Boolean).join(" · ")}
+              </div>
+              <button className="btn" style={{ marginTop: 10 }} onClick={onAvatarPick}>
+                {s.profile.avatar ? t("profile.changePhoto") : t("profile.addPhoto")}
+              </button>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 16 }}>
+        <KpiMini title={t("profile.totalTime")} value={`${Math.floor(totalMinutes(sessions)/60)}h`} sub={`${sessions.length} sessions`} tone="cyan"/>
+        <KpiMini title={t("profile.dailyAvg")} value={`${Math.round(totalMin / 90)} min`} sub={t("profile.last90")} tone="cyan"/>
+        <KpiMini title={t("profile.regularity")} value={`${Math.round(reviewRespected * 100)}%`} sub={t("profile.reviewsRespected")} tone="amber"/>
+        <KpiMini title={t("profile.level")} value={`Lv ${s.profile.level}`} sub={s.profile.rank} tone="violet"/>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <Card title={t("profile.activity")} meta={`${sessions.length} sessions • ${t("profile.heatmapStyle")}`}>
+          <Heatmap data={heatmapData} locale={locale}/>
           <div className="heatmap-legend">
-            <span>Moins</span>
+            <span>{t("profile.less")}</span>
             <span className="cell"/>
             <span className="cell l1"/>
             <span className="cell l2"/>
             <span className="cell l3"/>
             <span className="cell l4"/>
-            <span>Plus</span>
+            <span>{t("profile.more")}</span>
           </div>
         </Card>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 16, marginBottom: 16 }}>
-        <Card title="Courbe de productivité" meta="30 derniers jours">
-          <ProductivityCurve data={curve}/>
+        <Card title={t("profile.productivityCurve")} meta={t("profile.last30")}>
+          <ProductivityCurve data={curve} locale={locale}/>
         </Card>
 
-        <Card title="Répartition par matière" meta={`${Math.round(totalMin/60)}h cumulées`}>
+        <Card title={t("profile.bySubject")} meta={`${Math.round(totalMin/60)}h ${t("profile.cumulated")}`}>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {subjRanked.map((s) => {
               const pct = (s.min / totalMin) * 100;
@@ -120,8 +200,8 @@ const Stats = () => {
         </Card>
       </div>
 
-      <Card title="Historique des sessions" meta="dernières activités" actions={
-        <span className="muted mono" style={{ fontSize: 10 }}>30 ENTRÉES MAX</span>
+      <Card title={t("profile.history")} meta={t("profile.recent")} actions={
+        <span className="muted mono" style={{ fontSize: 10 }}>{t("profile.max30")}</span>
       }>
         <div style={{ display: "flex", flexDirection: "column" }}>
           {sessions.slice(-30).reverse().map((x, i) => {
@@ -135,9 +215,9 @@ const Stats = () => {
                 borderBottom: "1px solid var(--line)",
                 alignItems: "center",
               }}>
-                <span className="mono muted" style={{ fontSize: 11 }}>{new Date(x.at).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "2-digit" })}</span>
-                <span style={{ fontSize: 12 }}>{subj ? subj.name : "Session libre"}</span>
-                <span className="mono muted" style={{ fontSize: 11 }}>{new Date(x.at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</span>
+                <span className="mono muted" style={{ fontSize: 11 }}>{new Date(x.at).toLocaleDateString(locale, { day: "2-digit", month: "2-digit", year: "2-digit" })}</span>
+                <span style={{ fontSize: 12 }}>{subj ? subj.name : t("profile.freeSession")}</span>
+                <span className="mono muted" style={{ fontSize: 11 }}>{new Date(x.at).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })}</span>
                 <span className="mono" style={{ fontSize: 11, color: "var(--cyan)" }}>{x.duration} min</span>
               </div>
             );
@@ -148,7 +228,7 @@ const Stats = () => {
   );
 };
 
-const Heatmap = ({ data }) => {
+const Heatmap = ({ data, locale }) => {
   // Group into weeks. data[0] is oldest, data[last] is today.
   // We need to align so each column starts on a fixed weekday (Mon).
   const weeks = [];
@@ -170,7 +250,7 @@ const Heatmap = ({ data }) => {
     if (firstDay) {
       const m = firstDay.date.getMonth();
       if (m !== lastMonth) {
-        monthLabels.push({ idx, label: firstDay.date.toLocaleDateString("fr-FR", { month: "short" }) });
+        monthLabels.push({ idx, label: firstDay.date.toLocaleDateString(locale, { month: "short" }) });
         lastMonth = m;
       }
     }
@@ -180,7 +260,7 @@ const Heatmap = ({ data }) => {
     <div style={{ position: "relative" }}>
       <div style={{ display: "grid", gridTemplateColumns: `auto 1fr`, gap: 8 }}>
         <div style={{ display: "grid", gridTemplateRows: "repeat(7, 14px)", gap: 3, paddingTop: 18, color: "var(--fg-3)", fontSize: 9 }}>
-          <span/><span>Mar</span><span/><span>Jeu</span><span/><span>Sam</span><span/>
+          <span/><span>{locale === "en-US" ? "Tue" : "Mar"}</span><span/><span>{locale === "en-US" ? "Thu" : "Jeu"}</span><span/><span>{locale === "en-US" ? "Sat" : "Sam"}</span><span/>
         </div>
         <div className="heatmap-wrap">
           <div style={{ display: "grid", gridAutoFlow: "column", gridAutoColumns: "17px", marginBottom: 4, fontSize: 9, color: "var(--fg-3)", height: 14 }}>
@@ -193,7 +273,7 @@ const Heatmap = ({ data }) => {
               <div
                 key={i}
                 className={"cell " + (d ? "l" + d.level : "")}
-                title={d ? `${d.date.toLocaleDateString("fr-FR")} — ${d.cnt} sessions` : ""}
+                title={d ? `${d.date.toLocaleDateString(locale)} — ${d.cnt} sessions` : ""}
               />
             ))}
           </div>
@@ -203,7 +283,7 @@ const Heatmap = ({ data }) => {
   );
 };
 
-const ProductivityCurve = ({ data }) => {
+const ProductivityCurve = ({ data, locale }) => {
   const W = 600;
   const H = 200;
   const padding = { l: 30, r: 10, t: 10, b: 24 };
@@ -248,11 +328,11 @@ const ProductivityCurve = ({ data }) => {
       {/* x-axis labels — every ~5 days */}
       {points.filter((_, i) => i % 5 === 0 || i === points.length - 1).map((p, i) => (
         <text key={i} x={p.x} y={H - 6} textAnchor="middle" fontSize="8" fill="var(--fg-3)" fontFamily="IBM Plex Mono">
-          {new Date(p.dk).toLocaleDateString("fr-FR", { day: "numeric", month: "numeric" })}
+          {new Date(p.dk).toLocaleDateString(locale, { day: "numeric", month: "numeric" })}
         </text>
       ))}
     </svg>
   );
 };
 
-window.Stats = Stats;
+Object.assign(window, { ProfilePage, Avatar });

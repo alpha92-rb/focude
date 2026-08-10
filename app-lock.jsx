@@ -86,6 +86,7 @@ async function appLockVerify(credentialId) {
 }
 
 const AppLockGate = ({ children }) => {
+  const [lang] = useLang();
   const [ready, setReady] = React.useState(false);
   const [cfg, setCfg] = React.useState(null);
   const [unlocked, setUnlocked] = React.useState(false);
@@ -107,7 +108,7 @@ const AppLockGate = ({ children }) => {
       await appLockVerify(cfg.credentialId);
       setUnlocked(true);
     } catch {
-      setError("Vérification échouée ou annulée.");
+      setError(getLang() === "en" ? "Verification failed or cancelled." : "Vérification échouée ou annulée.");
     } finally {
       setBusy(false);
     }
@@ -130,11 +131,11 @@ const AppLockGate = ({ children }) => {
       <div className="app-bg"/>
       <div className="boot-card applock-card">
         <Logo size={44}/>
-        <div className="mono boot-label">APPLICATION VERROUILLÉE</div>
-        <div className="applock-msg">Déverrouille avec Face ID, Touch ID ou le code de l'appareil.</div>
+        <div className="mono boot-label">{t("applock.locked")}</div>
+        <div className="applock-msg">{t("applock.msg")}</div>
         {error && <div className="applock-error">{error}</div>}
         <button className="btn primary applock-btn" disabled={busy} onClick={tryUnlock}>
-          {busy ? "Vérification…" : "Déverrouiller"}
+          {busy ? t("applock.checking") : t("applock.unlock")}
         </button>
       </div>
     </div>

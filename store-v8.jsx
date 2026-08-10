@@ -182,6 +182,10 @@ function migrate(s) {
   if (!Array.isArray(s.deliveries)) s.deliveries = [];
   if (!Array.isArray(s.subjects)) s.subjects = [];
   if (s.profile.field == null) s.profile.field = "";
+  // Comptes créés avant l'ajout de la question "tu travailles ?" : l'onglet
+  // Entreprise existait déjà pour eux, on ne le fait pas disparaître.
+  if (s.profile.worksJob == null) s.profile.worksJob = true;
+  if (s.profile.avatar === undefined) s.profile.avatar = null;
   // Anciens codes d'année (BUT1/2/3), de quand l'app était encore spécifique
   // au BUT GEII — remappés pour que le sélecteur générique Année 1/2/3 les
   // reconnaisse toujours comme sélectionnés.
@@ -251,7 +255,7 @@ function useStore() {
 
 /* ---------- Actions ---------- */
 const actions = {
-  initProfile({ name, field, year, subjects, mode }) {
+  initProfile({ name, field, year, subjects, worksJob, avatar, mode }) {
     const base = mode === "fresh" ? emptyData() : seedData();
     if (mode === "fresh" && Array.isArray(subjects)) base.subjects = subjects;
     base.profile = {
@@ -259,6 +263,8 @@ const actions = {
       name: (name || "").trim() || "Étudiant",
       field: (field || "").trim(),
       year: year || "",
+      worksJob: !!worksJob,
+      avatar: avatar || null,
       onboarded: true,
       createdAt: now(),
     };

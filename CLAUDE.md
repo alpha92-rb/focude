@@ -44,7 +44,7 @@ en production :
 ## Versionnage par nom de fichier
 
 Il n'y a pas de git tags ni de changelog séparé pour les fichiers runtime :
-**le numéro de version fait partie du nom de fichier** (`store-v7.jsx`,
+**le numéro de version fait partie du nom de fichier** (`store-v8.jsx`,
 `dashboard-v6.jsx`, `molecule-atom-v3.jsx`, `styles-v9.css`, …). Quand tu
 fais une modification structurelle importante à un de ces fichiers (pas un
 simple correctif), le renommer en incrémentant sa version et mettre à jour
@@ -71,7 +71,7 @@ révisions majeures.
 | `manifest.webmanifest` | Métadonnées PWA / install iPhone-Android | — |
 | `icons/` | Icônes PWA (180/192/512/512-maskable) | — |
 | `styles-v9.css` | Feuille de style globale (inclut le bloc mobile / tactile / safe-area) | — |
-| `store-v7.jsx` | État global (Zustand-like maison), actions, FSRS-lite, atome à paliers, matières libres, sons, toasts | `useStore, actions, sfx, pushToast, useToasts, hasProfile, todaySessions, weekSessions, monthSessions, totalMinutes, dueChapters, urgentExams, dayKey, todayKey, dayMs, now, SUBJECT_PALETTE, …` |
+| `store-v8.jsx` | État global (Zustand-like maison), actions, FSRS-lite, atome à paliers, matières libres, sons, toasts | `useStore, actions, sfx, pushToast, useToasts, hasProfile, todaySessions, weekSessions, monthSessions, totalMinutes, dueChapters, urgentExams, dayKey, todayKey, dayMs, now, SUBJECT_PALETTE, …` |
 | `cloud-sync.jsx` | Client de synchro Supabase (push/pull, veille) | `cloud, useCloud, cloudAuth, startCloud, pushNow, syncOnLogin` |
 | `supabase-config.js` | `SUPABASE_URL` / `SUPABASE_ANON_KEY` (vide par défaut = sync désactivée) | `window.SUPABASE_URL`, `window.SUPABASE_ANON_KEY` |
 | `logo.jsx` | Logo SVG animé | `window.Logo` |
@@ -86,16 +86,17 @@ révisions majeures.
 | `revisions.jsx` | Page révisions + courbe d'Ebbinghaus | `Revisions, EbbinghausCurve, KpiMini` |
 | `exams.jsx` | Page examens | `window.Exams` |
 | `media-embed.jsx` | Lecteur média intégré (dock, pill) | `MediaPage, DockedPlayer, PlayerPill, MediaEmbed, activeMedia` |
-| `stats.jsx` | Page statistiques | `window.Stats` |
-| `settings-v3.jsx` | Page réglages (profil, domaine, matières, sécurité, sauvegarde) | `window.Settings` |
-| `onboarding.jsx` | Questionnaire de première utilisation (5 étapes : prénom, domaine, année, matières, mode) | `window.Onboarding` |
+| `profile.jsx` | Page Profil : photo + heatmap/courbe/répartition/historique (ex-`stats.jsx`) | `ProfilePage, Avatar` (+ `compressAvatar`, pas exporté) |
+| `settings-v3.jsx` | Page réglages (profil, domaine, année, travail, langue, matières, sécurité, sauvegarde) | `window.Settings` |
+| `i18n.jsx` | Traduction FR/EN — dictionnaire plat + `t()` + préférence de langue | `t, useLang, setLang, getLang, LANGS` |
+| `onboarding.jsx` | Questionnaire de première utilisation (6 étapes : prénom+photo, domaine, année, matières, travail, mode) | `window.Onboarding` (+ `LangSwitch`, pas exporté séparément) |
 | `auth.jsx` | Écran de connexion + puce de statut de synchro | `AuthScreen, SyncChip` |
 | `app-v5.jsx` | Point d'entrée, routing, montage React | — (dernier chargé) |
 | `SETUP-SYNC.md` | Guide utilisateur pour activer Supabase | — |
 
 ## Systèmes métier
 
-### Répétition espacée — FSRS-lite (`store-v7.jsx`)
+### Répétition espacée — FSRS-lite (`store-v8.jsx`)
 
 Algorithme inspiré d'Anki/FSRS, allégé, basé sur la courbe de l'oubli
 d'Ebbinghaus. Chaque chapitre a un état de révision programmé ; une révision
@@ -104,7 +105,7 @@ l'intervalle avant la prochaine échéance. `dueChapters` expose les chapitres
 en retard/à réviser aujourd'hui. La page `revisions.jsx` affiche la courbe
 (`EbbinghausCurve`) et la file de révision.
 
-### Atome à 16 paliers (`store-v7.jsx`, `molecule-atom-v3.jsx`)
+### Atome à 16 paliers (`store-v8.jsx`, `molecule-atom-v3.jsx`)
 
 Système de progression/gamification : au lieu de quelques stades grossiers,
 **16 paliers nommés** avec des seuils **géométriques** (chaque palier coûte
@@ -117,16 +118,16 @@ orbitales + nucleus + électrons qui évoluent avec le palier).
 ### Domaine et matières — libres, définis par l'utilisateur
 
 L'app n'a plus aucune liste de matières figée dans le code pour l'usage réel
-(seul `seedData()` dans `store-v7.jsx` garde des matières d'ingénierie
+(seul `seedData()` dans `store-v8.jsx` garde des matières d'ingénierie
 GEII-flavored, mais **seulement pour le mode démo** — le mode "démarrage
 propre" démarre avec `subjects: []`). Deux points d'entrée pour construire
 sa liste :
 
-1. **Onboarding** (`onboarding.jsx`, étape 4/5) — champ + bouton "Ajouter",
+1. **Onboarding** (`onboarding.jsx`, étape 4/6) — champ + bouton "Ajouter",
    chips retirables, palette de couleurs cyclique (`SUBJECT_PALETTE`).
 2. **Réglages** (`settings-v3.jsx`, carte "Matières") — mêmes actions
    (`actions.addSubject`, `actions.deleteSubject`, `actions.renameSubject`
-   dans `store-v7.jsx`), accessibles à tout moment après l'onboarding.
+   dans `store-v8.jsx`), accessibles à tout moment après l'onboarding.
 
 Une "matière" n'est qu'une étiquette `{ id, name, color }` — rien ne
 l'oblige à être scolaire (le texte d'aide le dit explicitement : sport,
@@ -137,6 +138,50 @@ tâches/chapitres/examens qui la référençaient : `SubjectTag` (dans
 Le champ `profile.field` (domaine/filière, texte libre, facultatif) est
 purement informatif — aucune logique ne se branche dessus, contrairement à
 l'ancien état où "GEII" était supposé partout dans les textes d'interface.
+
+### Traduction FR/EN (`i18n.jsx`)
+
+Dictionnaire plat (pas d'imbrication) : chaque texte est une clé
+`"domaine.nom"` mappée dans `DICT.fr` et `DICT.en`. `t("clé")` cherche dans
+la langue active, retombe sur le français si absent, puis sur la clé
+elle-même en tout dernier recours — jamais un écran vide même si une clé a
+été oubliée dans une langue. Préférence stockée à part de `profile`, en
+`localStorage` direct (`focude_lang_v1`) : elle doit être lisible **avant**
+qu'un compte existe, pour les écrans d'onboarding et de connexion. Se
+propage instantanément (`useLang()` + listeners, même mécanique que
+`useStore`/`useCloud`) — pas de rechargement de page nécessaire.
+
+**Couverture actuelle** : nav, topbar, onboarding, connexion, verrou
+biométrique, réglages, page Profil, et les modales de confirmation
+génériques (réinitialiser, déconnexion, sauvegarde). **Non couvert** : le
+contenu profond des pages métier (tableau de bord, tâches, entreprise,
+examens, révisions, Pomodoro, média) reste en français uniquement — les
+sous-chaînes `lastXp.reason` générées par `store-v8.jsx` (ex. "Révision",
+"Tâche terminée") aussi. Étendre la couverture = ajouter des clés dans
+`i18n.jsx` puis remplacer les chaînes en dur par `t("clé")` dans le fichier
+concerné, en import­ant `useLang()`/`t` (déjà global, aucun chargement
+supplémentaire requis vu l'ordre de `index.html`).
+
+### Photo de profil
+
+`profile.avatar` (data URL JPEG, `null` par défaut) est réglable dès
+l'onboarding (étape 1/6, facultatif) ou à tout moment depuis la page Profil.
+`compressAvatar()` (dans `profile.jsx`) redimensionne côté client à 256×256
+recadré carré et compresse en JPEG qualité 0.82 **avant** stockage — une
+photo de téléphone de plusieurs Mo finirait sinon dans chaque sync Supabase.
+Le composant `Avatar` (initiale colorée en repli si pas de photo) est
+réutilisé dans la topbar, l'onboarding et la page Profil.
+
+### Section Entreprise conditionnelle (`profile.worksJob`)
+
+L'onboarding demande "Tu travailles ?" (étape 5/6) ; la réponse (`profile.worksJob`,
+booléen) contrôle si l'onglet Entreprise apparaît dans la nav — réglable
+ensuite à tout moment dans Réglages. Comptes créés avant l'ajout de cette
+question (`migrate()` dans `store-v8.jsx`) reçoivent `worksJob: true` par
+défaut, pour ne pas faire disparaître un onglet déjà utilisé. Les raccourcis
+clavier 1-9 (`app-v5.jsx`, `visiblePageIds`) sont recalculés dynamiquement
+pour toujours correspondre à ce qui est réellement affiché dans le menu — si
+Entreprise est masqué, les numéros décalent en conséquence.
 
 ### Contraintes mobile / PWA iPhone
 

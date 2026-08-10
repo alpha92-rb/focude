@@ -1464,6 +1464,23 @@ kbd.kbd {
 .onb-brand .brand-mark { width: 34px; height: 34px; border-radius: 9px; }
 .onb-brand .brand-mark::after { inset: 7px; }
 
+.lang-switch {
+  display: flex; flex-shrink: 0;
+  border: 1px solid var(--line); border-radius: 999px;
+  padding: 2px; gap: 2px;
+}
+.lang-switch button {
+  border: none; background: transparent; color: var(--fg-2);
+  font-size: 10px; font-weight: 600; letter-spacing: 0.05em;
+  padding: 5px 10px; border-radius: 999px;
+  min-height: 26px;
+  transition: all 0.15s ease;
+}
+.lang-switch button.on {
+  background: oklch(0.72 0.18 240 / 0.22); color: var(--fg-0);
+  box-shadow: inset 0 0 0 1px oklch(0.72 0.18 240 / 0.4);
+}
+
 .onb-steps {
   display: flex; gap: 6px;
   margin-bottom: 26px;
