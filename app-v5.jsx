@@ -12,6 +12,7 @@ const App = () => {
   const [page, setPage] = React.useState("dashboard");
   const [confirmReset, setConfirmReset] = React.useState(false);
   const xpSeen = React.useRef(null);
+  const [systemEvent, setSystemEvent] = React.useState(null); // { level, rank } | { level, rank, closing: true } | null
 
   // L'onglet Entreprise disparaît si l'utilisateur a répondu "non" à "tu
   // travailles ?" — s'il était affiché quand la réponse a changé, on ne
@@ -54,15 +55,22 @@ const App = () => {
     if (now() - lastXp.at > 5000) return;
     if (lastXp.leveled) {
       sfx.levelUp();
-      pushToast({
-        kind: "levelup",
-        text: lang === "en" ? `Level ${s.profile.level} reached — the molecule evolves.` : `Niveau ${s.profile.level} atteint — la molécule évolue.`,
-        duration: 4200,
-      });
+      setSystemEvent({ level: s.profile.level, rank: rankFor(s.profile.level) });
     } else {
       pushToast({ kind: "xp", text: `+${lastXp.amount} XP · ${lastXp.reason}` });
     }
   }, [lastXp]);
+
+  // ---- "System" level-up window: auto-dismiss after a few seconds, unless already closing ----
+  React.useEffect(() => {
+    if (!systemEvent || systemEvent.closing) return;
+    const id = setTimeout(() => setSystemEvent((e) => e && { ...e, closing: true }), 4600);
+    return () => clearTimeout(id);
+  }, [systemEvent]);
+
+  const closeSystemEvent = () => {
+    setSystemEvent((e) => e && { ...e, closing: true });
+  };
 
   // Les raccourcis 1-9 doivent pointer vers ce qui est réellement affiché
   // dans le menu — si Entreprise est masqué (pas de travail déclaré), la
@@ -96,6 +104,27 @@ const App = () => {
   const ToastLayer = (
     <div className="toast-stack">
       {toasts.map((t) => (<div key={t.id} className={"toast " + t.kind}>{t.text}</div>))}
+    </div>
+  );
+
+  const SystemLevelUp = systemEvent && (
+    <div className="system-layer">
+      <div
+        className={"system-scrim" + (systemEvent.closing ? " out" : "")}
+        onClick={closeSystemEvent}
+        onAnimationEnd={() => { if (systemEvent.closing) setSystemEvent(null); }}
+      />
+      <div className={"system-panel" + (systemEvent.closing ? " out" : "")} onClick={closeSystemEvent}>
+        <div className="system-scan"/>
+        <div className="system-eyebrow">{t("system.eyebrow")}</div>
+        <div className="system-title">{t("system.title")}</div>
+        <div className="system-divider"/>
+        <div className="system-body">
+          <div className="system-level">{t("system.level")} {systemEvent.level}</div>
+          <div className="system-sub">{t("system.newRank")} <b>{systemEvent.rank}</b></div>
+        </div>
+        <div className="system-hint">{t("system.hint")}</div>
+      </div>
     </div>
   );
 
@@ -242,6 +271,8 @@ const App = () => {
           <div key={t.id} className={"toast " + t.kind}>{t.text}</div>
         ))}
       </div>
+
+      {SystemLevelUp}
 
       {confirmReset && (
         <ConfirmModal

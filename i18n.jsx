@@ -126,6 +126,9 @@ const DICT = {
     "dash.nextReviews": "Prochaines révisions", "dash.toDo": "à faire", "dash.rev": "RÉV.", "dash.mem": "MEM",
     "dash.noUrgentReviews": "Aucune révision urgente.",
     "dash.upcomingExams": "Examens à venir", "dash.scheduled": "programmés", "dash.coef": "COEF", "dash.noExams": "Aucun examen programmé.",
+
+    "system.eyebrow": "SYSTÈME", "system.title": "MONTÉE DE NIVEAU", "system.level": "NIVEAU",
+    "system.newRank": "Nouveau rang débloqué :", "system.hint": "TOUCHER POUR FERMER",
   },
   en: {
     "nav.dashboard": "Dashboard", "nav.pomodoro": "Pomodoro", "nav.revisions": "Spaced repetition",
@@ -210,6 +213,9 @@ const DICT = {
     "dash.nextReviews": "Upcoming reviews", "dash.toDo": "to do", "dash.rev": "REV.", "dash.mem": "MEM",
     "dash.noUrgentReviews": "No urgent reviews.",
     "dash.upcomingExams": "Upcoming exams", "dash.scheduled": "scheduled", "dash.coef": "COEF", "dash.noExams": "No exam scheduled.",
+
+    "system.eyebrow": "SYSTEM", "system.title": "LEVEL UP", "system.level": "LEVEL",
+    "system.newRank": "New rank unlocked:", "system.hint": "TAP TO CLOSE",
   },
 };
 
