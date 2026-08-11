@@ -45,7 +45,7 @@ en production :
 
 Il n'y a pas de git tags ni de changelog séparé pour les fichiers runtime :
 **le numéro de version fait partie du nom de fichier** (`store-v8.jsx`,
-`dashboard-v6.jsx`, `molecule-atom-v3.jsx`, `styles-v9.css`, …). Quand tu
+`dashboard-v6.jsx`, `molecule-atom-v4.jsx`, `styles-v9.css`, …). Quand tu
 fais une modification structurelle importante à un de ces fichiers (pas un
 simple correctif), le renommer en incrémentant sa version et mettre à jour
 **tous** les points qui le référencent :
@@ -78,7 +78,7 @@ révisions majeures.
 | `icons.jsx` | Bibliothèque d'icônes SVG inline | `window.Icon` |
 | `shared-fixed.jsx` | Composants UI partagés (Card, Modal, Sparkline, ProgressRing, …) | `Card, Sparkline, ProgressRing, Particles, Modal, ConfirmModal, SubjectTag` |
 | `app-lock.jsx` | Verrou d'appareil Face ID/Touch ID/code (WebAuthn, sans serveur) | `AppLockGate, appLockSupported, appLockEnable, appLockDisable` |
-| `molecule-atom-v3.jsx` | Rendu 3D (Three.js) de la molécule/atome compagnon | `window.Molecule3D` |
+| `molecule-atom-v4.jsx` | Rendu 3D (Three.js) de la molécule/atome compagnon | `window.Molecule3D` |
 | `tasks.jsx` | Page tâches | `TaskRow, TasksPage, AddTaskModal` |
 | `entreprise.jsx` | Page suivi entreprise/alternance | `window.Entreprise` |
 | `dashboard-v6.jsx` | Page tableau de bord | `window.Dashboard` |
@@ -105,15 +105,35 @@ l'intervalle avant la prochaine échéance. `dueChapters` expose les chapitres
 en retard/à réviser aujourd'hui. La page `revisions.jsx` affiche la courbe
 (`EbbinghausCurve`) et la file de révision.
 
-### Atome à 16 paliers (`store-v8.jsx`, `molecule-atom-v3.jsx`)
+### Atome à 16 paliers (`store-v8.jsx`, `molecule-atom-v4.jsx`)
 
 Système de progression/gamification : au lieu de quelques stades grossiers,
 **16 paliers nommés** avec des seuils **géométriques** (chaque palier coûte
 davantage que le précédent), pensé pour donner de la marge de progression
 sur plusieurs années d'utilisation. La progression est stockée en continu
 (0..15, partie fractionnaire = avancement réel à l'intérieur du palier
-courant) puis rendue visuellement par `molecule-atom-v3.jsx` (Three.js,
+courant) puis rendue visuellement par `molecule-atom-v4.jsx` (Three.js,
 orbitales + nucleus + électrons qui évoluent avec le palier).
+
+La richesse visuelle est elle-même une récompense : des couches entières
+n'apparaissent qu'en montant, et le noyau (qui représente les connaissances
+accumulées) grossit franchement au lieu de rester une bille lisse —
+graduations d'anneaux au palier 3, cage interne du noyau au 4, électrons
+multiples + traînées au 5, arcs d'énergie au 7, doubles liaisons au 9, voile
+de confinement Fresnel au 10, seconde cage contra-rotative au 12.
+
+Deux pièges à connaître avant de toucher à ce fichier :
+
+1. **Le cadrage se mesure sur les atomes seuls**, jamais avec
+   `Box3.setFromObject(group)` : les sprites de halo (la couronne du noyau
+   fait plusieurs dizaines d'unités) domineraient la boîte englobante et la
+   molécule finirait cadrée comme un point perdu au centre de ses halos.
+2. **Le voile Fresnel a besoin d'un exposant élevé** (`pow(f, 6.0)`) et
+   d'une opacité faible : plus doux, il cesse d'être un liseré de silhouette
+   et devient une boule opaque qui masque toute la structure.
+
+Tout ce qui est coûteux (nombre d'électrons, traînées, arcs) est réduit sur
+téléphone via `isPhone`.
 
 ### Domaine et matières — libres, définis par l'utilisateur
 
