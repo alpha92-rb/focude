@@ -238,6 +238,30 @@ la carte "Sécurité" ne s'affiche pas).
 
 ### Supabase — synchro en veille par défaut
 
+La synchro doit être **entièrement automatique** : aucune action de
+l'utilisateur ne doit être nécessaire. Le câblage repose sur des événements
+choisis pour la PWA mobile, et **ne pas revenir à `focus` / `beforeunload`** :
+
+- `focus` n'est pas fiable au retour depuis le sélecteur d'applications, et
+  `beforeunload` n'est quasiment jamais émis sur iOS (le système gèle puis tue
+  l'onglet) — les dernières modifications restaient donc bloquées sur
+  l'appareil. On utilise `visibilitychange`, `pagehide`/`pageshow` et `online`,
+  en gardant `focus`/`beforeunload` en complément pour le bureau.
+- Passer en arrière-plan **vide immédiatement** la file d'envoi (`flushPush`)
+  au lieu d'attendre le regroupement de 1,5 s.
+- Une **récupération périodique** (45 s, uniquement page visible) fait arriver
+  seuls les changements de l'autre appareil.
+
+Trois garde-fous rendent cette boucle inoffensive, à préserver :
+
+1. La comparaison est **stricte** (`remoteAt > localAt`). À égalité on ne
+   ré-hydrate pas : sinon l'état React entier serait reconstruit toutes les
+   45 secondes.
+2. `lastPushedAt` empêche de renvoyer en boucle un document inchangé, et le
+   message « Données envoyées » ne s'affiche qu'au premier rapprochement.
+3. `hydrating` neutralise l'écho : appliquer un document distant notifie les
+   listeners du store, ce qui déclencherait sinon un envoi immédiat en retour.
+
 `cloud-sync.jsx` gère la synchro multi-appareils, mais elle est **inactive
 tant que `supabase-config.js` n'est pas rempli** (`SUPABASE_URL` /
 `SUPABASE_ANON_KEY` vides). Sans configuration, l'app fonctionne 100% en

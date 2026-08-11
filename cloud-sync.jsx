@@ -167,6 +167,11 @@ const cloudAuth = {
     } catch (e) {}
     try { localStorage.removeItem("geii_lab_v1"); } catch (e) {}
     actions.resetAll();                    // l'appareil ne garde pas les données
+    // Repères de synchro remis à zéro : sans ça, une connexion suivante
+    // comparerait l'état d'un autre compte à celui-ci.
+    clearTimeout(pushTimer);
+    firstSyncDone = false;
+    lastPushedAt = null;
     setCloud({ user: null, status: "signedout" });
   },
 };
@@ -191,7 +196,9 @@ async function fetchRemote() {
   return data;
 }
 
-// On login: whichever side is newer wins.
+// Le plus récent des deux côtés gagne. Appelée à la connexion, mais aussi en
+// boucle tant que la page est visible : tout ce qui suit doit donc rester
+// silencieux et sans effet quand il n'y a rien à faire.
 async function syncOnLogin() {
   if (!cloud.client || !cloud.user) return;
   try {
@@ -200,15 +207,34 @@ async function syncOnLogin() {
     const localAt = local && local.updatedAt ? local.updatedAt : 0;
     const remoteAt = remote && remote.data && remote.data.updatedAt ? remote.data.updatedAt : 0;
 
-    if (remote && remoteAt >= localAt) {
-      hydrateStore(remote.data);
+    const hasLocal = !!(local && local.profile);
+
+    // Comparaison STRICTE : à égalité, les deux côtés portent déjà le même
+    // document. Ré-hydrater serait sans effet utile mais reconstruirait tout
+    // l'état React — soit, avec la récupération périodique, un rafraîchissement
+    // complet de l'interface toutes les 45 secondes.
+    if (remote && (!hasLocal || remoteAt > localAt)) {
+      // Une écriture locale programmée avant ce pull porterait sur un état
+      // désormais périmé : elle réécrirait par-dessus ce qu'on vient de
+      // récupérer. On l'annule, et on marque l'hydratation pour que les
+      // listeners du store ne la relancent pas en écho.
+      clearTimeout(pushTimer);
+      hydrating = true;
+      try { hydrateStore(remote.data); } finally { hydrating = false; }
+      lastPushedAt = remoteAt;            // ce document vient du serveur, ne pas le renvoyer
       setCloud({ status: "synced", lastSync: Date.now(), message: "" });
-    } else if (local && local.profile) {
+    } else if (hasLocal && localAt !== lastPushedAt) {
+      // Local en avance ET réellement modifié depuis le dernier envoi : sans
+      // cette seconde condition, la récupération périodique réenverrait le
+      // même document indéfiniment.
       await pushNow();
-      pushToast({ kind: "default", text: "Données de cet appareil envoyées sur ton compte." });
+      // Le message n'a de sens qu'au premier rapprochement après connexion ;
+      // répété toutes les 45 s, il deviendrait du bruit.
+      if (!firstSyncDone) pushToast({ kind: "default", text: "Données de cet appareil envoyées sur ton compte." });
     } else {
-      setCloud({ status: "synced", lastSync: Date.now() });
+      setCloud({ status: "synced", lastSync: Date.now(), message: "" });
     }
+    firstSyncDone = true;
   } catch (e) {
     setCloud({ status: "error", message: "Synchro impossible — travail en local" });
   }
@@ -216,6 +242,9 @@ async function syncOnLogin() {
 
 let pushTimer = null;
 let pushInFlight = false;
+let hydrating = false;      // vrai le temps d'appliquer un document distant
+let firstSyncDone = false;  // le message de rapprochement ne sert qu'une fois
+let lastPushedAt = null;    // `updatedAt` du dernier document réellement envoyé
 
 async function pushNow() {
   if (!cloud.client || !cloud.user) return;
@@ -230,6 +259,7 @@ async function pushNow() {
       updated_at: new Date().toISOString(),
     }, { onConflict: "user_id" });
     if (error) throw error;
+    lastPushedAt = doc.updatedAt;
     setCloud({ status: "synced", lastSync: Date.now(), message: "" });
   } catch (e) {
     setCloud({ status: "error", message: "Sauvegarde en ligne échouée" });
@@ -240,21 +270,75 @@ async function pushNow() {
 
 function schedulePush() {
   if (!cloud.client || !cloud.user) return;
+  if (hydrating) return;                   // écho d'un pull, pas une vraie modification
   clearTimeout(pushTimer);
   pushTimer = setTimeout(pushNow, 1500);   // regroupe les modifications rapides
 }
 
-/* ---------- wiring ---------- */
+// Envoie sans attendre la fin du regroupement : à utiliser quand la page peut
+// être gelée ou détruite d'un instant à l'autre.
+function flushPush() {
+  if (!cloud.client || !cloud.user) return;
+  clearTimeout(pushTimer);
+  pushNow();
+}
+
+// Récupère, sauf si une écriture est déjà en cours (elle porte l'état le plus
+// récent : la doubler d'un pull ferait clignoter les données).
+function pullIfIdle() {
+  if (!cloud.client || !cloud.user || pushInFlight) return;
+  syncOnLogin();
+}
+
+/* ---------- wiring ----------
+
+   La synchro doit être invisible : aucune action de l'utilisateur ne doit
+   être nécessaire pour envoyer ou récupérer. Les deux événements employés
+   auparavant — `focus` pour récupérer, `beforeunload` pour envoyer — sont
+   précisément ceux sur lesquels on ne peut pas compter dans une PWA
+   installée sur téléphone :
+
+   • `focus` ne se déclenche pas de façon fiable quand on revient sur une
+     application depuis le sélecteur d'applications iOS/Android ;
+   • `beforeunload` n'est quasiment jamais émis sur iOS, où le système gèle
+     puis tue l'onglet sans prévenir — les dernières modifications restaient
+     donc en attente sur l'appareil.
+
+   On s'appuie donc sur le cycle de vie réellement émis (`visibilitychange`,
+   `pagehide`, `pageshow`), et on ajoute une récupération périodique tant que
+   la page est visible, pour qu'un changement fait sur l'autre appareil
+   arrive tout seul, sans avoir à quitter puis revenir. */
+const PULL_INTERVAL_MS = 45000;
+let pullTimer = null;
+
 function startCloud() {
   initCloud().then(() => {
     if (!cloud.enabled) return;
+
     subscribeStore(schedulePush);                   // toute modification locale → push
-    window.addEventListener("focus", () => {        // retour sur l'appareil → pull
-      if (cloud.user && !pushInFlight) syncOnLogin();
+
+    document.addEventListener("visibilitychange", () => {
+      // Passer en arrière-plan est le dernier moment fiable pour écrire.
+      if (document.visibilityState === "hidden") flushPush();
+      else pullIfIdle();
     });
-    window.addEventListener("beforeunload", () => {
-      if (cloud.user) { clearTimeout(pushTimer); pushNow(); }
-    });
+
+    // `pagehide`/`pageshow` couvrent le gel et la restauration depuis le cache
+    // de navigation, que `visibilitychange` seul ne signale pas toujours.
+    window.addEventListener("pagehide", flushPush);
+    window.addEventListener("pageshow", pullIfIdle);
+
+    // Bureau : `focus` reste le signal le plus immédiat au retour sur l'onglet.
+    window.addEventListener("focus", pullIfIdle);
+    window.addEventListener("beforeunload", flushPush);
+
+    // Retour de connexion : rattraper ce qui n'a pas pu partir ou arriver.
+    window.addEventListener("online", () => { flushPush(); pullIfIdle(); });
+
+    clearInterval(pullTimer);
+    pullTimer = setInterval(() => {
+      if (document.visibilityState === "visible") pullIfIdle();
+    }, PULL_INTERVAL_MS);
   });
 }
 

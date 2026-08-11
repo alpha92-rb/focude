@@ -1,6 +1,6 @@
 /* Focude — minimal offline app-shell cache.
    Only activates when served over http(s); harmless no-op file otherwise. */
-const CACHE = "geii-lab-v14";
+const CACHE = "geii-lab-v15";
 const SHELL = [
   "./", "./index.html", "./styles-v9.css", "./store-v8.jsx", "./i18n.jsx", "./icons.jsx", "./shared-fixed.jsx",
   "./app-lock.jsx", "./logo.jsx", "./molecule-atom-v4.jsx", "./dashboard-v6.jsx", "./tasks.jsx", "./pomodoro-final.jsx",
