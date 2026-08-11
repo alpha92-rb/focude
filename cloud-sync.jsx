@@ -14,11 +14,49 @@
 
 const cloudConfigured = !!(window.SUPABASE_URL && window.SUPABASE_ANON_KEY);
 
-// Supabase ramène l'utilisateur sur le Site URL avec `#...&type=signup` dans
-// le lien de confirmation d'e-mail. Capturé ici, en lecture seule — surtout
-// ne PAS toucher au hash avant que le SDK (créé plus tard, dans initCloud)
-// n'ait eu la main dessus : c'est de ce même hash qu'il extrait la session.
-const emailJustConfirmed = new URLSearchParams(location.hash.replace(/^#/, "")).get("type") === "signup";
+// URL de retour de l'application, calculée à l'exécution.
+//
+// Sans `emailRedirectTo`, Supabase renvoie sur le « Site URL » du projet :
+// si celui-ci ne pointe pas exactement sur le sous-dossier GitHub Pages où
+// l'app est publiée, le lien de confirmation tombe sur un 404 GitHub. On
+// force donc le retour sur l'adresse réellement servie, quelle qu'elle soit
+// (racine de domaine, sous-dossier de projet, autre).
+//
+// À savoir côté tableau de bord Supabase : cette URL doit figurer dans la
+// liste « Redirect URLs », sinon Supabase l'ignore et retombe sur Site URL.
+function appReturnUrl() {
+  return location.origin + location.pathname.replace(/index\.html?$/i, "");
+}
+
+// Supabase ramène l'utilisateur avec `type=signup` dans le lien de
+// confirmation — dans le hash (flux implicite) ou dans la query (flux PKCE),
+// selon la configuration du projet : on regarde les deux. Capturé ici, en
+// lecture seule — surtout ne PAS toucher au hash/à la query avant que le SDK
+// (créé plus tard, dans initCloud) n'ait eu la main dessus : c'est de là
+// qu'il extrait la session.
+const _linkHash = new URLSearchParams(location.hash.replace(/^#/, ""));
+const _linkQuery = new URLSearchParams(location.search);
+const _linkParam = (name) => _linkHash.get(name) || _linkQuery.get(name);
+
+const emailJustConfirmed = _linkParam("type") === "signup";
+// Lien périmé ou déjà utilisé : Supabase le signale par `error`, et sans
+// traitement l'utilisateur retombe sur l'écran de connexion sans la moindre
+// explication.
+const authLinkError = _linkParam("error_description") || _linkParam("error") || "";
+const cameFromAuthLink = emailJustConfirmed || !!authLinkError;
+
+// Retire les paramètres du lien d'authentification en gardant le reste.
+function cleanAuthParamsFromUrl() {
+  try {
+    const q = new URLSearchParams(location.search);
+    ["type", "code", "error", "error_code", "error_description"].forEach((p) => q.delete(p));
+    const qs = q.toString();
+    history.replaceState(null, "", location.pathname + (qs ? "?" + qs : ""));
+  } catch (e) {
+    // replaceState est refusé sur certains schémas (file://) : cosmétique
+    // seulement, ça ne doit jamais faire échouer l'initialisation.
+  }
+}
 
 const cloud = {
   enabled: cloudConfigured,
@@ -27,6 +65,10 @@ const cloud = {
   status: cloudConfigured ? "boot" : "off",   // boot | off | signedout | syncing | synced | error | offline
   message: "",
   lastSync: null,
+  // Retour d'un lien de confirmation d'e-mail : l'écran dédié se substitue à
+  // tout le reste tant que l'utilisateur n'a pas acquitté.
+  emailNotice: null,                          // null | "confirmed" | "error"
+  emailNoticeDetail: "",
 };
 
 const cloudListeners = new Set();
@@ -57,13 +99,14 @@ async function initCloud() {
     });
     cloud.enabled = true;
     const { data } = await cloud.client.auth.getSession();
-    // Le SDK a maintenant lu ce qu'il avait besoin de lire dans le hash —
-    // on peut le nettoyer de l'URL et signaler la confirmation une fois.
-    if (emailJustConfirmed) {
-      history.replaceState(null, "", location.pathname + location.search);
-      if (data && data.session) {
-        pushToast({ kind: "levelup", text: "Focude a bien confirmé ton e-mail — bienvenue !", duration: 5000 });
-      }
+    // Le SDK a maintenant lu ce qu'il avait besoin de lire dans l'URL — on
+    // peut la nettoyer et afficher l'écran de confirmation.
+    if (cameFromAuthLink) {
+      cleanAuthParamsFromUrl();
+      setCloud({
+        emailNotice: authLinkError ? "error" : "confirmed",
+        emailNoticeDetail: authLinkError,
+      });
     }
     if (data && data.session) {
       setCloud({ user: data.session.user, status: "syncing" });
@@ -87,7 +130,10 @@ async function initCloud() {
 const cloudAuth = {
   async signUp(email, password) {
     if (!cloud.client) return { error: "Synchronisation non configurée." };
-    const { data, error } = await cloud.client.auth.signUp({ email: email.trim(), password });
+    const { data, error } = await cloud.client.auth.signUp({
+      email: email.trim(), password,
+      options: { emailRedirectTo: appReturnUrl() },
+    });
     if (error) return { error: translateAuthError(error.message) };
     if (data.user && !data.session) {
       return { needsConfirm: true };   // confirmation e-mail activée sur le projet
@@ -102,7 +148,9 @@ const cloudAuth = {
   },
   async resetPassword(email) {
     if (!cloud.client) return { error: "Synchronisation non configurée." };
-    const { error } = await cloud.client.auth.resetPasswordForEmail(email.trim());
+    const { error } = await cloud.client.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: appReturnUrl(),
+    });
     if (error) return { error: translateAuthError(error.message) };
     return {};
   },
@@ -210,4 +258,9 @@ function startCloud() {
   });
 }
 
-Object.assign(window, { cloud, useCloud, cloudAuth, startCloud, pushNow, syncOnLogin });
+// Acquittement de l'écran de confirmation d'e-mail.
+function dismissEmailNotice() {
+  setCloud({ emailNotice: null, emailNoticeDetail: "" });
+}
+
+Object.assign(window, { cloud, useCloud, cloudAuth, startCloud, pushNow, syncOnLogin, dismissEmailNotice });

@@ -64,7 +64,37 @@ window.SUPABASE_ANON_KEY = "eyJhbGciOi...";
 Envoie le fichier sur GitHub. Au prochain chargement, l'application demande une
 connexion : crée ton compte, et c'est tout.
 
-## 5. (Recommandé) Confirmation d'e-mail
+## 5. Autoriser l'adresse de retour (sinon : 404 GitHub)
+
+**À faire si tu laisses la confirmation d'e-mail activée.** C'est l'étape la
+plus facile à oublier, et son symptôme est net : on clique dans l'e-mail de
+confirmation et on tombe sur une **page GitHub 404**.
+
+Pourquoi : Supabase ne renvoie pas n'importe où après avoir validé un lien. Il
+renvoie sur le **Site URL** du projet, sauf si l'application demande une autre
+adresse *et* que celle-ci figure dans la liste blanche. L'application demande
+bien son adresse réelle (calculée à l'exécution, voir `appReturnUrl()` dans
+`cloud-sync.jsx`), mais Supabase l'ignore tant qu'elle n'est pas autorisée — et
+retombe alors sur un Site URL qui, par défaut, ne pointe pas sur le
+sous-dossier GitHub Pages du projet.
+
+**Authentication → URL Configuration** :
+
+- **Site URL** → l'adresse exacte de l'application, **avec le sous-dossier et
+  le slash final** : `https://<utilisateur>.github.io/<depot>/`
+  (pour ce dépôt : `https://alpha92-rb.github.io/focude/`).
+- **Redirect URLs** → ajoute la même adresse. Ajoute aussi
+  `http://localhost:*/**` si tu testes en local.
+
+Une adresse sans le sous-dossier (`https://<utilisateur>.github.io/`) ou sans
+le slash final est la cause typique du 404.
+
+Une fois l'adresse correcte, cliquer dans l'e-mail ramène sur l'application,
+qui affiche explicitement **« Focude a bien validé ton e-mail. »** — et, si le
+lien a expiré ou a déjà servi, un message qui le dit au lieu d'un écran de
+connexion muet.
+
+## 6. (Facultatif) Se passer de la confirmation d'e-mail
 
 Par défaut Supabase envoie un e-mail de confirmation à l'inscription.
 Pour t'inscrire sans cette étape (usage personnel) :

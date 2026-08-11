@@ -131,6 +131,43 @@ const AuthScreen = () => {
   );
 };
 
+/* ==========================================================
+   Retour du lien de confirmation d'e-mail.
+
+   Sans cet écran, l'utilisateur qui clique dans son mail retombe sur
+   l'écran de connexion sans savoir si la validation a marché — ou, quand
+   le lien ne pointe pas sur le bon sous-dossier, sur un 404 GitHub.
+   ========================================================== */
+const EmailNoticeScreen = () => {
+  const [lang] = useLang();
+  const c = useCloud();
+  const ok = c.emailNotice === "confirmed";
+  return (
+    <div className="boot-shell">
+      <div className="app-bg"/>
+      <Particles count={18}/>
+      <div className="boot-card applock-card">
+        <Logo size={44}/>
+        <div className="mono boot-label">{ok ? t("auth.confirmed.tag") : t("auth.linkError.tag")}</div>
+        <div style={{ fontSize: 15, letterSpacing: "0.03em" }}>
+          {ok ? t("auth.confirmed.title") : t("auth.linkError.title")}
+        </div>
+        <div className="applock-msg">
+          {ok ? t("auth.confirmed.msg") : t("auth.linkError.msg")}
+        </div>
+        {/* Le détail brut de Supabase n'est pas traduit : il sert surtout à
+            comprendre un lien périmé, il ne remplace pas le message. */}
+        {!ok && c.emailNoticeDetail && (
+          <div className="applock-error">{c.emailNoticeDetail}</div>
+        )}
+        <button className="btn primary applock-btn" onClick={() => dismissEmailNotice()}>
+          {ok ? t("auth.confirmed.cta") : t("auth.linkError.cta")}
+        </button>
+      </div>
+    </div>
+  );
+};
+
 /* Petit indicateur d'état de synchro pour la barre du haut */
 const SyncChip = () => {
   const [lang] = useLang();
@@ -160,4 +197,4 @@ const SyncChip = () => {
   );
 };
 
-Object.assign(window, { AuthScreen, SyncChip });
+Object.assign(window, { AuthScreen, SyncChip, EmailNoticeScreen });

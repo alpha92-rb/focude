@@ -89,6 +89,13 @@ const DICT = {
     "auth.createAccount": "Créer un compte", "auth.haveAccount": "J'ai déjà un compte", "auth.forgot": "Oublié ?",
     "auth.sendLink": "Envoyer le lien", "auth.signin": "Se connecter", "auth.footer1": "ACCÈS PROTÉGÉ PAR MOT DE PASSE", "auth.footer2": "SYNCHRO CHIFFRÉE · TLS",
 
+    "auth.confirmed.tag": "ADRESSE VÉRIFIÉE", "auth.confirmed.title": "Focude a bien validé ton e-mail.",
+    "auth.confirmed.msg": "Ton adresse est confirmée. Tu peux maintenant te connecter et retrouver ton travail sur tous tes appareils.",
+    "auth.confirmed.cta": "Continuer",
+    "auth.linkError.tag": "LIEN INVALIDE", "auth.linkError.title": "Ce lien n'est plus valable.",
+    "auth.linkError.msg": "Le lien de confirmation a expiré ou a déjà été utilisé. Reconnecte-toi, ou refais une demande depuis l'écran de connexion.",
+    "auth.linkError.cta": "Retour à la connexion",
+
     "applock.locked": "APPLICATION VERROUILLÉE", "applock.msg": "Déverrouille avec Face ID, Touch ID ou le code de l'appareil.",
     "applock.unlock": "Déverrouiller", "applock.checking": "Vérification…",
 
@@ -175,6 +182,13 @@ const DICT = {
     "auth.email": "Email address", "auth.password": "Password", "auth.confirmPassword": "Confirm password",
     "auth.createAccount": "Create an account", "auth.haveAccount": "I already have an account", "auth.forgot": "Forgot?",
     "auth.sendLink": "Send the link", "auth.signin": "Sign in", "auth.footer1": "PASSWORD-PROTECTED ACCESS", "auth.footer2": "ENCRYPTED SYNC · TLS",
+
+    "auth.confirmed.tag": "ADDRESS VERIFIED", "auth.confirmed.title": "Focude has verified your email.",
+    "auth.confirmed.msg": "Your address is confirmed. You can now sign in and pick up your work on every device.",
+    "auth.confirmed.cta": "Continue",
+    "auth.linkError.tag": "INVALID LINK", "auth.linkError.title": "This link is no longer valid.",
+    "auth.linkError.msg": "The confirmation link has expired or was already used. Sign in again, or request a new one from the sign-in screen.",
+    "auth.linkError.cta": "Back to sign-in",
 
     "applock.locked": "APP LOCKED", "applock.msg": "Unlock with Face ID, Touch ID, or your device passcode.",
     "applock.unlock": "Unlock", "applock.checking": "Checking…",

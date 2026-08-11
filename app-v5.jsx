@@ -148,6 +148,13 @@ const App = () => {
       </div>
     );
   }
+  // Retour d'un lien de confirmation d'e-mail : on le dit explicitement, avant
+  // l'écran de connexion comme avant l'application — que la confirmation ait
+  // ouvert une session ou non, l'utilisateur doit savoir où il en est.
+  if (c.enabled && c.emailNotice) {
+    return (<><EmailNoticeScreen/>{ToastLayer}</>);
+  }
+
   if (c.enabled && !c.user && c.status !== "offline") {
     return (<><AuthScreen/>{ToastLayer}</>);
   }
